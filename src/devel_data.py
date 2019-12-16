@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime as dt
+import geo_access as geo_access__
 
 def download_devel_data():
     """Downloads development data.
@@ -65,11 +66,9 @@ def import_devel_data(timestamp, subset = True):
     
     Returns:
         A pandas dataframe containing either the entire database or
-        a 10-dataset subset. All columns are objects except:
+        a 10-dataset subset. All columns are objects or floats except
+        'Date', which turns into a datetime dtype.
 
-            * 'Date' turns into a datetime dtype
-            * 'Reported cells total' turns to an int64
-    
     Raises:
         Exception: 'File read failed!' on error thrown from pandas.read_csv()
     """
@@ -82,15 +81,57 @@ def import_devel_data(timestamp, subset = True):
     timestamp = timestamp + '.tsv'
     file_name = path + '_'.join(['valentine_data', file_spec, timestamp])
     try:
-        df = pd.read_csv(file_name, sep = '\t')
+        df = pd.read_csv(file_name, sep = '\t', thousands = ',')
     except:
         print('File read failed!')
-    df['Reported cells total'] = df['Reported cells total'].str.replace(',', '')
-    df['Reported cells total'] = df['Reported cells total'].astype('int64')
+    # df['Reported cells total'] is not represented as an integer
+    # dtype because it has missing values. One of the unaddressed
+    # problems in pandas is that you can't have an integer Series
+    # that also has missing values. It has to be a float dtype.
     df['Date'] = pd.to_datetime(df['Date'].astype('str'), format = '%Y%m%d')
     return df
 
+def download_devel_data_soft(path, timestamp, gse_ids = None):
+    """Download GEO SOFT files for datasets in devel_data.
 
+    Takes a set of GEO Series IDs from the Valentine Svensson
+    development data, and downloads their SOFT metadata files
+    from GEO.
+
+    Args:
+        path: String containing the path to which the files should
+            be downloaded.
+        timestamp: String containing a date of the strftime() format
+            '%Y%m%d_%H%M%S', indicating which version of the
+            development data to use.
+        gse_ids: If None, will use all GSE IDs in the database. If
+            'subset', will use all GSE IDs in that subset. Otherwise,
+            must be a list of GSE IDs (e.g. GSE11234) that will be
+            used as a match for the GSE IDs in the database.
+    
+    Returns:
+        0 if all executions of geo_access__.get_series_soft_file() returned
+        a 0. 1 if any of them returned a 1.
+
+    Raises: None
+    """
+    if gse_ids == 'subset':
+        gse_ids = import_devel_data(timestamp, subset = True)['Data location']
+    elif gse_ids is None:
+        df = import_devel_data(timestamp, subset = False)
+        gse_ids = df['Data location']
+        gse_ids = gse_ids[gse_ids.notnull()]
+        gse_ids = gse_ids[gse_ids.str.contains('^GSE') == True]
+    else:
+        df = import_devel_data(timestamp, subset = False)
+        gse_ids = df[df['Data location'].isin(gse_ids)]['Data location']
+    exit_flag = 0
+    for id in gse_ids:
+        exit = geo_access__.get_series_soft_file(id, path = '../devel_data/')
+        if exit == 1:
+            exit_flag = 1
+    return(exit_flag)
+    
 def main():
     pass
 
