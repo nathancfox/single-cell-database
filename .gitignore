@@ -3,3 +3,6 @@ database
 
 # VSCode Stuff
 .vscode
+
+# Background files
+*__pycache__
