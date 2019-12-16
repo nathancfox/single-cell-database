@@ -98,7 +98,7 @@ def get_series_soft_file(gse_id, path):
     """
     ftp_url = get_series_soft_url(gse_id)
     file_name = gse_id + '_family.soft.gz'
-    bash_curl_script = (f'curl -s -o {path}{file_name} '
+    bash_curl_script = (f'wget -q -P {path} '
                         f'\"{ftp_url}\"')
     bash_gunzip_script = (f'gunzip {path}{file_name}')
     if os.path.exists('get_series_soft_file_temp.sh'):
