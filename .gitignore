@@ -6,3 +6,6 @@ database
 
 # Background files
 *__pycache__
+
+# Scratch space
+sandbox/

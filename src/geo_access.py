@@ -161,8 +161,6 @@ def get_series_suppl_files(gse_id, path):
     os.system('bash get_series_suppl_file_temp.sh')
     os.remove('get_series_suppl_file_temp.sh')
     
-
-    
 def main():
     pass
 
