@@ -1,26 +1,29 @@
 import os
 import sys
+import datetime as dt
+import general_utils as general_utils__
 
 def convert_gse_to_folder(gse_id):
-    """Convert GEO Series ID to FTP folder.
+    """Converts GEO Series ID to FTP folder.
 
     Converts a GEO Series ID into the FTP folder that the files are
     located in, on the NCBI FTP servers. Example ftp URL:
     'ftp://ftp.ncbi.nlm.gov/geo/series/GSEnnn/GSE1/soft/GSE1_family.soft.gz'
 
-    The folders are named by converting the last 3 digits of the Series ID
-    to 'nnn'. This Python slice notation returns an empty string if the string
-    has length <= 3. Thus, even for GSE1, it still returns GSEnnn. This also
-    works for longer GSE IDs such as GSE12345 returning GSE12nnn.
+    The folders are named by converting the last 3 digits of the
+    Series ID to 'nnn'. This Python slice notation returns an empty
+    string if the string has length <= 3. Thus, even for GSE1, it
+    still returns GSEnnn. This also works for longer GSE IDs such as
+    GSE12345 returning GSE12nnn.
 
     Args:
-        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series ID to
-            convert.
+        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series
+            ID to convert.
     
     Returns:
-        String. The name of the NCBI FTP folder holding the information
-        for that GEO Series ID, gse_id. Should be of the regex form
-        'GSE[0-9]*nnn/'
+        String. The name of the NCBI FTP folder holding the
+        information for that GEO Series ID, gse_id. Should be of the
+        regex form 'GSE[0-9]*nnn/'
     
     Raises: None
     """
@@ -28,15 +31,15 @@ def convert_gse_to_folder(gse_id):
     return 'GSE' + gse_id[:-3] + 'nnn/'
 
 def get_series_soft_url(gse_id):
-    """Create FTP URL for GEO Series soft file.
+    """Creates FTP URL for GEO Series soft file.
 
     Given a GEO Series ID, constructs an FTP URL to download
     the associated SOFT file, holding the metadata for that
     GEO Series and its child GEO Samples.
 
     Args:
-        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series ID to
-            convert.
+        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series
+            ID to convert.
     
     Returns:
         String. The full FTP URL to the SOFT file associated with
@@ -51,7 +54,7 @@ def get_series_soft_url(gse_id):
     return(ftp_url_full)
 
 def get_series_suppl_url(gse_id):
-    """Create FTP URL for GEO Series supplementary files.
+    """Creates FTP URL for GEO Series supplementary files.
 
     Given a GEO Series ID, constructs an FTP URL to download
     the associated supplementary files. The URL will point to
@@ -59,8 +62,8 @@ def get_series_suppl_url(gse_id):
     particular file.
 
     Args:
-        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series ID to
-            convert.
+        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series
+            ID to convert.
     
     Returns:
         String. The full FTP URL to the supplementary files folder
@@ -74,7 +77,7 @@ def get_series_suppl_url(gse_id):
     return(ftp_url_full)
 
 def get_series_soft_file(gse_id, path):
-    """Download and unzip a GEO Series SOFT file.
+    """Downloads and unzips a GEO Series SOFT file.
 
     Given a path and a GEO Series ID, downloads the associated
     SOFT file, and gunzips it in the given path.
@@ -85,12 +88,14 @@ def get_series_soft_file(gse_id, path):
     already a file called that, to avoid overwriting anything.
 
     Args:
-        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series ID to
-            convert.
-        path: String containing the path in which to store the GSE SOFT file.
+        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series 
+            ID to convert.
+        path: String containing the path in which to store the GSE
+            SOFT file.
 
     Returns:
-        0 if the expected file exists in the expected place. 1 otherwise.
+        0 if the expected file exists in the expected place.
+        1 otherwise.
     
     Raises:
         Error if this method will overwrite a file with its temporary
@@ -119,7 +124,7 @@ def get_series_soft_file(gse_id, path):
         return(1)
 
 def get_series_suppl_files(gse_id, path):
-    """Download and unzip a GEO Series's supplementary files.
+    """Downloads and unzips a GEO Series's supplementary files.
 
     Given a path and a GEO Series ID, downloads the associated
     supplementary files, and gunzips them in the given path. Unlike
@@ -133,8 +138,8 @@ def get_series_suppl_files(gse_id, path):
     already a file called that, to avoid overwriting anything.
 
     Args:
-        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series ID to
-            convert.
+        gse_id: String of the regex form 'GSE[0-9]+'. The GEO Series
+            ID to convert.
         path: String containing the path in which to store the
             GSE supplementary files.
 
@@ -147,7 +152,7 @@ def get_series_suppl_files(gse_id, path):
     ftp_url = get_series_suppl_url(gse_id)
     bash_curl_script = ('wget -q --no-parent --recursive --level=1 '
                        f'--no-directories -P {path} \"{ftp_url}\"')
-    bash_gunzip_script = (f'gunzip {path}*')
+    bash_gunzip_script = (f'gunzip {path}*gz')
     if os.path.exists('get_series_suppl_file_temp.sh'):
         sys.exit(('File \"get_series_suppl_file_temp.sh\" already exists'
                   ' and will be overwritten by a temp file created by'
@@ -160,6 +165,196 @@ def get_series_suppl_files(gse_id, path):
         f.write('\n')
     os.system('bash get_series_suppl_file_temp.sh')
     os.remove('get_series_suppl_file_temp.sh')
+
+def build_new_entry_folder(path):
+    """Builds a folder for a new entry in the database.
+
+    Given a path, builds a new folder to store files
+    related to a given entry in the database. The folder
+    is named with a new UUID.
+
+    Args:
+        path: String. The path to the location in which the
+            new folder will be created.
+    
+    Returns:
+        A tuple with two members:
+            1. The new UUID as a string. Also the name of
+               the new directory.
+            2. The path to the new directory.
+    
+    Raises:
+        FileExistsError: Raised if the directory already exists.
+    """
+    new_id = general_utils__.get_uuid()
+    # Will raise a FileExistsError if the directory
+    # already exists.
+    os.mkdir(os.path.join(path, new_id))
+    return((new_id, os.path.join(path, new_id) + '/'))
+
+def build_new_entry_log(new_id, gse_id, path):
+    """Builds a new log file for a new entry in the database.
+
+    Starts a new log file for a new entry in the database. Intended
+    to be run after build_new_entry_folder(). Writes basic initial
+    information.
+
+    Args:
+        new_id: String. The UUID assigned to this entry.
+        gse_id: String. The GEO Series ID associated with this entry.
+        path: String. The path to the folder associated with
+            this entry. The folder should be named something
+            that matches new_id.
+
+    Returns: None
+    Raises: None
+    """
+    with open(os.path.join(path, 'log.txt'), 'w') as f:
+        f.write(f'UUID         : {new_id}\n')
+        f.write(f'GEO ID       : {gse_id}\n')
+        datetime_stamp = general_utils__.get_timestamp()
+        f.write(f'Date Created : {datetime_stamp}\n')
+        temp = '=' * 80
+        f.write(f'{temp}\n')
+
+def get_directory_listing(path):
+    """Gets a list of all files in a directory.
+
+    Gets a list of strings denoting all files in a given
+    directory. This is non-recursive. All sub-directories
+    will end with a '/'.
+
+    Args:
+        path: String. The path to the folder to be scanned.
+
+    Returns:
+        A sorted list of strings, where each string represents
+        a file or sub-directory
+    
+    Raises: None
+    """
+    # old_wd = os.getcwd()
+    # os.chdir(path)
+    listing = []
+    with os.scandir(path) as current_dir:
+        for entry in current_dir:
+            if entry.is_dir():
+                listing.append((entry.name + '/'))
+            else:
+                listing.append(entry.name)
+    listing.sort()
+    # os.chdir(old_wd)
+    return(listing)
+
+def log_directory_listing(path, old_listing = None):
+    """Logs the state of the directory for a given entry.
+
+    Given a directory, meant to be a directory associated with an
+    entry in the database, logs the contents of the directory
+    to the log.txt file in that directory. If old_listing is
+    given, logs the added or deleted files instead of
+    logging the current listing.
+
+    Args:
+        path: String. Path to the folder that is to be logged. It
+            should also contain the log.txt file.
+        old_listing: If None, logs the current contents of the
+            directory. If not None, should be a tuple with 2 members:
+
+                1. A set of strings where each string is a file or
+                   sub-directory. This should represent a previous
+                   state of the directory indicated by path. This
+                   is ideally generated by
+                   set(get_directory_listing()) because the
+                   sub-directories will need to end with '/'.
+                2. A string. This is the timestamp that will be
+                   logged as the time that this old listing was
+                   created. Can be in any format, but will look
+                   best in this format: 2019-01-01 13:04:32
+    
+    Returns: None
+    Raises: None
+    """
+    # old_wd = os.getcwd()
+    # os.chdir(path)
+    if old_listing is None:
+        listing = get_directory_listing(path)
+        with open(os.path.join(path, 'log.txt'), 'a') as f:
+            idt = ' ' * 4
+            f.write('\n')
+            datetime_stamp = general_utils__.get_timestamp()
+            f.write(f'> Directory Listing at {datetime_stamp}\n')
+            f.write( '  ----------------------------------------')
+            for l in listing:
+                f.write(f'{idt}{l}\n')
+    else:
+        old_listing, old_datetime_stamp = old_listing
+        current_listing = set(get_directory_listing(path))
+        new_files = list(current_listing - old_listing)
+        new_files.sort()
+        deleted_files = list(old_listing - current_listing)
+        deleted_files.sort()
+        with open(os.path.join(path, 'log.txt'), 'a') as f:
+            idt = ' ' * 4
+            f.write('\n')
+            datetime_stamp = general_utils__.get_timestamp()
+            f.write(f'> Change in Directory Listing\n')
+            f.write('\n')
+            f.write(f'{idt}Old : {old_datetime_stamp}\n')
+            f.write(f'{idt}New : {datetime_stamp}\n')
+            f.write('\n')
+            f.write((f'{idt}NOTE: Old Listing and Timestamp are provided '
+                     f'manually.\n{idt}      They may be faked by the code '
+                     f'calling this function.\n'))
+            f.write('\n')
+            if len(new_files) == 0 and len(deleted_files) == 0:
+                f.write(f'{idt}No changes!\n')
+            elif len(new_files) != 0 and len(deleted_files) == 0:
+                f.write(f'{idt}New Files\n{idt}---------\n')
+                for entry in new_files:
+                    f.write(f'{idt}{idt}{entry}\n')
+            elif len(new_files) == 0 and len(deleted_files) != 0:
+                f.write(f'{idt}Deleted Files\n{idt}-------------\n')
+                for entry in deleted_files:
+                    f.write(f'{idt}{idt}{entry}\n')
+            else:
+                f.write(f'{idt}New Files\n{idt}---------\n')
+                for entry in new_files:
+                    f.write(f'{idt}{idt}{entry}\n')
+                f.write('\n')
+                f.write(f'{idt}Deleted Files\n{idt}-------------\n')
+                for entry in deleted_files:
+                    f.write(f'{idt}{idt}{entry}\n')
+
+    # os.chdir(old_wd)
+
+def download_series_to_db(gse_id, path):
+    """Downloads a GEO Series to the database.
+
+    Downloads the SOFT file and all associated supplementary
+    files for a given GEO Series to a new folder and logs
+    the files added.
+
+    Args:
+        gse_id: String. The GEO Series ID to scrape.
+            e.g. GSE12345
+        path: String. The path that the new entry's folder
+            will be created in.
+    
+    Returns: None
+    Raises: None
+    """
+    new_id, path = build_new_entry_folder(path)
+    build_new_entry_log(new_id, gse_id, path)
+    old_listing = (set(get_directory_listing(path)),
+                   general_utils__.get_timestamp())
+    get_series_soft_file(gse_id, path)
+    log_directory_listing(path, old_listing = old_listing)
+    old_listing = (set(get_directory_listing(path)),
+                   general_utils__.get_timestamp())
+    get_series_suppl_files(gse_id, path)
+    log_directory_listing(path, old_listing = old_listing)
+
     
 def main():
     pass
