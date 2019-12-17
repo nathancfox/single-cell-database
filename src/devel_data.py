@@ -1,6 +1,7 @@
 import pandas as pd
 import datetime as dt
 import geo_access as geo_access__
+import general_utils as general_utils__
 
 def download_devel_data():
     """Downloads development data.
@@ -30,10 +31,7 @@ def download_devel_data():
     # Datetime stamp on the files for 2 reasons
     #   1. Never overwrite previous versions of the scraped data
     #   2. We know when the data was scraped
-    now = dt.datetime.now()
-    date_stamp = now.strftime('%y%m%d')
-    time_stamp = now.strftime('%H%M%S')
-
+    dt_stamp = general_utils__.get_timestamp()
     devel_data = data[(data['Title'].str.contains('[Ss]ingle') == True)
                     & (data['Reported cells total'].map(pd.isna) == False)
                     & (data['Date'] >= 20190101)
@@ -42,11 +40,11 @@ def download_devel_data():
     devel_data = devel_data.sample(n=10,
                                 replace=False,
                                 axis=0)
-    data.to_csv(f'{path}valentine_data_full_{date_stamp}_{time_stamp}.tsv',
+    data.to_csv(f'{path}valentine_data_full_{dt_stamp}.tsv',
                 sep='\t',
                 header=True,
                 index=False)
-    devel_data.to_csv(f'{path}valentine_data_subset_{date_stamp}_{time_stamp}.tsv',
+    devel_data.to_csv(f'{path}valentine_data_subset_{dt_stamp}.tsv',
                     sep='\t',
                     header=True,
                     index=False)
