@@ -31,7 +31,7 @@ def download_devel_data():
     # Datetime stamp on the files for 2 reasons
     #   1. Never overwrite previous versions of the scraped data
     #   2. We know when the data was scraped
-    dt_stamp = general_utils__.get_timestamp()
+    dt_stamp = general_utils__.get_timestamp(long = False)
     devel_data = data[(data['Title'].str.contains('[Ss]ingle') == True)
                     & (data['Reported cells total'].map(pd.isna) == False)
                     & (data['Date'] >= 20190101)
@@ -56,19 +56,19 @@ def import_devel_data(timestamp, subset = True):
     data and returns it as a pandas dataframe.
     
     Args:
-        timestamp: String indicating the specific version of the development
-            data to import. Should be in the strftime format '%y%m%d_%H%M%S'.
-            For example, 2019-03-14 13:03:43 would be '190314_130343'.
-        subset: Boolean indicating whether the 10-entry subset or the full
-            database should be imported.
+        timestamp: String indicating the specific version of the
+            development data to import. Should be in the strftime
+            format '%y%m%d_%H%M%S'. For example, 2019-03-14 13:03:43
+            would be '190314_130343'.
+        subset: Boolean indicating whether the 10-entry subset or
+            the full database should be imported.
     
     Returns:
         A pandas dataframe containing either the entire database or
         a 10-dataset subset. All columns are objects or floats except
         'Date', which turns into a datetime dtype.
 
-    Raises:
-        Exception: 'File read failed!' on error thrown from pandas.read_csv()
+    Raises: None
     """
     path = '../devel_data/'
     file_spec = ''
@@ -87,7 +87,7 @@ def import_devel_data(timestamp, subset = True):
     return df
 
 def download_devel_data_soft(path, timestamp, gse_ids = None):
-    """Download GEO SOFT files for datasets in devel_data.
+    """Downloads GEO SOFT files for datasets in devel_data.
 
     Takes a set of GEO Series IDs from the Valentine Svensson
     development data, and downloads their SOFT metadata files
@@ -105,8 +105,8 @@ def download_devel_data_soft(path, timestamp, gse_ids = None):
             used as a match for the GSE IDs in the database.
     
     Returns:
-        0 if all executions of geo_access__.get_series_soft_file() returned
-        a 0. 1 if any of them returned a 1.
+        0 if all executions of geo_access__.get_series_soft_file()
+        returned a 0. 1 if any of them returned a 1.
 
     Raises: None
     """
