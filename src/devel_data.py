@@ -80,10 +80,7 @@ def import_devel_data(timestamp, subset = True):
         file_spec = 'full'
     timestamp = timestamp + '.tsv'
     file_name = path + '_'.join(['valentine_data', file_spec, timestamp])
-    try:
-        df = pd.read_csv(file_name, sep = '\t', thousands = ',')
-    except:
-        print('File read failed!')
+    df = pd.read_csv(file_name, sep = '\t', thousands = ',')
     # df['Reported cells total'] is not represented as an integer
     # dtype because it has missing values. One of the unaddressed
     # problems in pandas is that you can't have an integer Series
