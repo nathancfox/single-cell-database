@@ -342,7 +342,10 @@ def download_series_to_db(gse_id, path):
         path: String. The path that the new entry's folder
             will be created in.
     
-    Returns: None
+    Returns:
+        new_id: String. The name of the new entry's folder
+            and also its UUID.
+
     Raises: None
     """
     new_id, path = build_new_entry_folder(path)
@@ -355,6 +358,7 @@ def download_series_to_db(gse_id, path):
                    gu__.get_timestamp())
     get_series_suppl_files(gse_id, path)
     log_directory_listing(path, old_listing = old_listing)
+    return(new_id)
 
     
 def main():
