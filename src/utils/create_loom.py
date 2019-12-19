@@ -34,7 +34,12 @@ def create_loom_file(file_path, expr_matrix, barcodes, features):
         raise FileExistsError(f'{file_path} already exists!')
     row_attrs = {'barcode': barcodes}
     col_attrs = {'feature': features}
-    lp.create(file_path, expr_matrix, row_attrs, col_attrs)
+    try:
+        lp.create(file_path, expr_matrix, row_attrs, col_attrs)
+    except MemoryError:
+        print('\nERROR: Dataset too large to create a loom file!\n')
+        sys.exit(1)
+
 
 def get_expr_matrix_from_cellranger(path):
     """Gets expression matrix, barcodes, features from Cell Ranger.
