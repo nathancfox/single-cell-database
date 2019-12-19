@@ -1,7 +1,8 @@
-import os
 import sys
+sys.path.append('/home/nfox/projects/single_cell_database/src')
+import os
 import datetime as dt
-import general_utils as general_utils__
+import utils.general_utils as gu__
 
 def convert_gse_to_folder(gse_id):
     """Converts GEO Series ID to FTP folder.
@@ -186,7 +187,7 @@ def build_new_entry_folder(path):
     Raises:
         FileExistsError: Raised if the directory already exists.
     """
-    new_id = general_utils__.get_uuid()
+    new_id = gu__.get_uuid()
     # Will raise a FileExistsError if the directory
     # already exists.
     os.mkdir(os.path.join(path, new_id))
@@ -212,7 +213,7 @@ def build_new_entry_log(new_id, gse_id, path):
     with open(os.path.join(path, 'log.txt'), 'w') as f:
         f.write(f'UUID         : {new_id}\n')
         f.write(f'GEO ID       : {gse_id}\n')
-        datetime_stamp = general_utils__.get_timestamp()
+        datetime_stamp = gu__.get_timestamp()
         f.write(f'Date Created : {datetime_stamp}\n')
         temp = '=' * 80
         f.write(f'{temp}\n')
@@ -282,7 +283,7 @@ def log_directory_listing(path, old_listing = None):
         with open(os.path.join(path, 'log.txt'), 'a') as f:
             idt = ' ' * 4
             f.write('\n')
-            datetime_stamp = general_utils__.get_timestamp()
+            datetime_stamp = gu__.get_timestamp()
             f.write(f'> Directory Listing at {datetime_stamp}\n')
             f.write( '  ----------------------------------------')
             for l in listing:
@@ -297,7 +298,7 @@ def log_directory_listing(path, old_listing = None):
         with open(os.path.join(path, 'log.txt'), 'a') as f:
             idt = ' ' * 4
             f.write('\n')
-            datetime_stamp = general_utils__.get_timestamp()
+            datetime_stamp = gu__.get_timestamp()
             f.write(f'> Change in Directory Listing\n')
             f.write('\n')
             f.write(f'{idt}Old : {old_datetime_stamp}\n')
@@ -347,11 +348,11 @@ def download_series_to_db(gse_id, path):
     new_id, path = build_new_entry_folder(path)
     build_new_entry_log(new_id, gse_id, path)
     old_listing = (set(get_directory_listing(path)),
-                   general_utils__.get_timestamp())
+                   gu__.get_timestamp())
     get_series_soft_file(gse_id, path)
     log_directory_listing(path, old_listing = old_listing)
     old_listing = (set(get_directory_listing(path)),
-                   general_utils__.get_timestamp())
+                   gu__.get_timestamp())
     get_series_suppl_files(gse_id, path)
     log_directory_listing(path, old_listing = old_listing)
 

@@ -1,7 +1,9 @@
+import sys
+sys.path.append('/home/nfox/projects/single_cell_database/src')
 import pandas as pd
 import datetime as dt
-import geo_access as geo_access__
-import general_utils as general_utils__
+import utils.geo_access as ga__
+import utils.general_utils as gu__
 
 def download_devel_data():
     """Downloads development data.
@@ -31,7 +33,7 @@ def download_devel_data():
     # Datetime stamp on the files for 2 reasons
     #   1. Never overwrite previous versions of the scraped data
     #   2. We know when the data was scraped
-    dt_stamp = general_utils__.get_timestamp(long = False)
+    dt_stamp = gu__.get_timestamp(long = False)
     devel_data = data[(data['Title'].str.contains('[Ss]ingle') == True)
                     & (data['Reported cells total'].map(pd.isna) == False)
                     & (data['Date'] >= 20190101)
@@ -105,7 +107,7 @@ def download_devel_data_soft(path, timestamp, gse_ids = None):
             used as a match for the GSE IDs in the database.
     
     Returns:
-        0 if all executions of geo_access__.get_series_soft_file()
+        0 if all executions of ga__.get_series_soft_file()
         returned a 0. 1 if any of them returned a 1.
 
     Raises: None
@@ -122,7 +124,7 @@ def download_devel_data_soft(path, timestamp, gse_ids = None):
         gse_ids = df[df['Data location'].isin(gse_ids)]['Data location']
     exit_flag = 0
     for id in gse_ids:
-        exit = geo_access__.get_series_soft_file(id, path = '../devel_data/')
+        exit = ga__.get_series_soft_file(id, path = '../devel_data/')
         if exit == 1:
             exit_flag = 1
     return(exit_flag)
