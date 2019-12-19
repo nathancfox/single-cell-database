@@ -8,6 +8,28 @@ import scipy
 import utils.general_utils as gu__
 
 def create_loom_file(file_path, expr_matrix, barcodes, features):
+    """Creates a loom file.
+
+    Args:
+        file_path: String. A full path, including the file
+            name, of the new loom file. e.g. path/to/new_file.loom
+        expr_matrix: The actual expression matrix. Can be a
+            numpy.ndarray, or any of these scipy sparse matrices:
+                * scipy.sparse.coo_matrix
+                * scipy.sparse.csc_matrix
+                * scipy.sparse.csr_matrix
+            and it must have cells on the rows and genes
+            on the columns.
+        barcodes: numpy.ndarray. Should be a single dimension
+            array holding the cell IDs. Length must equal
+            the number of rows in expr_matrix.
+        features: numpy.ndarray. Should be a single dimension
+            array holding the gene IDs. Length must equal
+            the number of columns in expr_matrix.
+    
+    Returns: None
+    Raises: None
+    """
     if os.path.exists(file_path):
         raise FileExistsError(f'{file_path} already exists!')
     row_attrs = {'barcode': barcodes}
