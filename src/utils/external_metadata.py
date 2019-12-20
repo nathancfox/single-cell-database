@@ -132,22 +132,6 @@ _COLUMN_DESCRIPTIONS = {
             '    e.g. \"/data/single_cell_database/12345678-1234-5678-1234-567812345678/\"'
         )
 }
-_COLUMN_MANDATORY = {
-    'species'        : True,
-    'organ'          : False,
-    'number_of_cells': True, 
-    'condition'      : False,
-    'date_generated' : True,
-    'count_format'   : True,
-    'umis'           : False,
-    'spikeins'       : False,
-    'technology'     : False,
-    'doi'            : True,
-    'accession'      : False,
-    'date_integrated': True,
-    'uuid'           : True,
-    'file_location'  : True
-}
 _COLUMN_INDEX = {
     'species'        : 0,
     'organ'          : 1,
@@ -163,6 +147,22 @@ _COLUMN_INDEX = {
     'date_integrated': 11,
     'uuid'           : 12,
     'file_location'  : 13
+}
+_COLUMN_MANDATORY = {
+    'species'        : True,
+    'organ'          : False,
+    'number_of_cells': True, 
+    'condition'      : False,
+    'date_generated' : True,
+    'count_format'   : True,
+    'umis'           : False,
+    'spikeins'       : False,
+    'technology'     : False,
+    'doi'            : True,
+    'accession'      : False,
+    'date_integrated': True,
+    'uuid'           : True,
+    'file_location'  : True
 }
 
 def append_row(new_row):
