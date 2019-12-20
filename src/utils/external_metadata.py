@@ -19,7 +19,7 @@ import os
 import re
 
 # Global Variables
-_PATH_TO_DATA = '/home/nfox/projects/single_cell_database/sandbox/external_metadata.tsv'
+_PATH_TO_DATA = '/home/nfox/projects/single_cell_database/sandbox/test_external_metadata.tsv'
 _COLUMN_DESCRIPTIONS = {
     'species': 
         (
@@ -130,6 +130,13 @@ _COLUMN_DESCRIPTIONS = {
             '    file and all internal metadata for this dataset.\n'
             '    Must end with a \'/\'.\n'
             '    e.g. \"/data/single_cell_database/12345678-1234-5678-1234-567812345678/\"'
+        ),
+    'internal':
+        (
+            '15. Internal\n'
+            '    Whether or not the dataset was scraped from a repository. '
+            '    False if it is internally generated data.'
+            '    Must be one of these two values: {\"True\", \"False\"}.'
         )
 }
 _COLUMN_INDEX = {
@@ -146,7 +153,8 @@ _COLUMN_INDEX = {
     'accession'      : 10,
     'date_integrated': 11,
     'uuid'           : 12,
-    'file_location'  : 13
+    'file_location'  : 13,
+    'internal'       : 14
 }
 _COLUMN_MANDATORY = {
     'species'        : True,
@@ -158,11 +166,12 @@ _COLUMN_MANDATORY = {
     'umis'           : False,
     'spikeins'       : False,
     'technology'     : False,
-    'doi'            : True,
+    'doi'            : False,
     'accession'      : False,
     'date_integrated': True,
     'uuid'           : True,
-    'file_location'  : True
+    'file_location'  : True,
+    'internal'       : True
 }
 
 def append_row(new_row):
@@ -195,14 +204,32 @@ def append_row(new_row):
                 f.write('\t')
 
 def get_new_row_input():
+    """Get new entry from user.
+
+    Provides a command line, interactive interface to
+    collect the values of a new entry from the user.
+    The values are not written directly to the
+    external metadata file, rather they are returned
+    as a list for external code to parse.
+
+    Args: None
+    
+    Returns:
+        A list of strings, in order of the columns
+        in the header of the external metadata file.
+
+    Raises:
+        AssertionError: If any element of the returned
+                        list did not get edited.
+    """
     print()
     print('New Entry to External Metadata')
     print('------------------------------')
     print()
     print('For each column, enter your value, then press Enter.')
     print('If you do not have the information, simply press')
-    print('Enter without typing anything. However, if the column')
-    print('is mandatory, the system will not accept an empty value.')
+    print('Enter without typing anything. If the column is mandatory,')
+    print('indicated with an *, the system will not accept an empty value.')
     print()
     print('To execute one of the following options, enter')
     print('the command in any of the prompts.')
@@ -221,7 +248,10 @@ def get_new_row_input():
     while loop:
         column_name = _COLUMN_DESCRIPTIONS[colnames[col_idx]]
         column_name = column_name.split('\n')[0][4:]
-        print('Column {:02}: {:s}'.format(col_idx + 1, column_name))
+        if _COLUMN_MANDATORY[colnames[col_idx]]:
+            print('Column {:02}: {:s}*'.format(col_idx + 1, column_name))
+        else:
+            print('Column {:02}: {:s}'.format(col_idx + 1, column_name))
         user_input = input('> ')
         if user_input == 'QUIT':
             print('\nExiting...')
@@ -269,6 +299,21 @@ def get_new_row_input():
     if 'FILL_ME_IN' in new_vals:
         raise AssertionError('At least one column did not get a value!')
     return(new_vals)
+
+def write_header():
+    """Write header of new external metadata file."""
+    global _PATH_TO_DATA
+    if os.path.exists(_PATH_TO_DATA):
+        raise AssertionError(f'{_PATH_TO_DATA} already exists!')
+    indices = pd.DataFrame({'keys': list(_COLUMN_INDEX.keys()),
+                            'values': list(_COLUMN_INDEX.values())})
+    indices = indices.sort_values(by = 'values')
+    columns = indices['keys']
+    with open(_PATH_TO_DATA, 'w') as f:
+        for i, k in enumerate(columns):
+            f.write(k)
+            if i < (len(columns) - 1):
+                f.write('\t')
 
 def write_new_file(df):
     """Write dataframe to file.
