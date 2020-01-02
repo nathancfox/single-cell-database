@@ -3,7 +3,7 @@ README
 ------
 
 The external metadata file is a text, tab-separated-value file
-located at the global variable below: _PATH_TO_DATA.
+located at the global variable below: _PATH_TO_METADATA.
 
 Column details can be seen in the global dictionary
 below: _COLUMN_DESCRIPTIONS
@@ -19,7 +19,7 @@ import os
 import re
 
 # Global Variables
-_PATH_TO_DATA = '/home/nfox/projects/single_cell_database/database/external_metadata.tsv'
+_PATH_TO_METADATA = '/home/nfox/projects/single_cell_database/database/external_metadata.tsv'
 _COLUMN_DESCRIPTIONS = {
     'species': 
         (
@@ -190,14 +190,14 @@ def append_row(new_row):
     """
     global _COLUMN_MANDATORY
     global _COLUMN_INDEX
-    global _PATH_TO_DATA
+    global _PATH_TO_METADATA
     n_columns = get_shape()[1]
     if len(new_row) != n_columns:
         raise AssertionError(f'new_row must have length {n_columns}!')
     for k, v in _COLUMN_INDEX.items():
         if (_COLUMN_MANDATORY[k]) and (new_row[v] == ''):
             raise ValueError('Mandatory column is missing!')
-    with open(_PATH_TO_DATA, 'a') as f:
+    with open(_PATH_TO_METADATA, 'a') as f:
         f.write('\n')
         for i in range(len(new_row)):
             f.write(new_row[i])
@@ -303,14 +303,14 @@ def get_new_row_input():
 
 def write_header():
     """Write header of new external metadata file."""
-    global _PATH_TO_DATA
-    if os.path.exists(_PATH_TO_DATA):
-        raise AssertionError(f'{_PATH_TO_DATA} already exists!')
+    global _PATH_TO_METADATA
+    if os.path.exists(_PATH_TO_METADATA):
+        raise AssertionError(f'{_PATH_TO_METADATA} already exists!')
     indices = pd.DataFrame({'keys': list(_COLUMN_INDEX.keys()),
                             'values': list(_COLUMN_INDEX.values())})
     indices = indices.sort_values(by = 'values')
     columns = indices['keys']
-    with open(_PATH_TO_DATA, 'w') as f:
+    with open(_PATH_TO_METADATA, 'w') as f:
         for i, k in enumerate(columns):
             f.write(k)
             if i < (len(columns) - 1):
@@ -329,16 +329,16 @@ def write_new_file(df):
     Returns: None
     Raises: None
     """
-    global _PATH_TO_DATA
-    df.to_csv(_PATH_TO_DATA,
+    global _PATH_TO_METADATA
+    df.to_csv(_PATH_TO_METADATA,
               sep = '\t',
               header = True,
               index = False)
 
 def get_as_dataframe():
     """Gets external metadata as pandas dataframe."""
-    global _PATH_TO_DATA
-    df = pd.read_csv(_PATH_TO_DATA,
+    global _PATH_TO_METADATA
+    df = pd.read_csv(_PATH_TO_METADATA,
                      sep = '\t',
                      header = 0,
                      index_col = None)
@@ -346,8 +346,8 @@ def get_as_dataframe():
 
 def get_shape():
     """Get shape of external metadata."""
-    global _PATH_TO_DATA
-    df = pd.read_csv(_PATH_TO_DATA,
+    global _PATH_TO_METADATA
+    df = pd.read_csv(_PATH_TO_METADATA,
                      sep = '\t',
                      header = 0,
                      index_col = None)
@@ -355,8 +355,8 @@ def get_shape():
 
 def get_column_names():
     """Get list of column names of external metadata."""
-    global _PATH_TO_DATA
-    header = pd.read_csv(_PATH_TO_DATA, sep = '\t', header = None, nrows = 1)
+    global _PATH_TO_METADATA
+    header = pd.read_csv(_PATH_TO_METADATA, sep = '\t', header = None, nrows = 1)
     header = list(header.iloc[0])
     return(header)
 
@@ -416,33 +416,33 @@ def verify_global_constants():
     """Run assertion tests on global variables.
     
     The following assertions are checked:
-        * _PATH_TO_DATA points to an existing regular file
-        * _PATH_TO_DATA will open successfully
+        * _PATH_TO_METADATA points to an existing regular file
+        * _PATH_TO_METADATA will open successfully
         * _COLUMN_DESCRIPTIONS, _COLUMN_INDEX, and _COLUMN_MANDATORY
           all have the same length
         * _COLUMN_DESCRIPTIONS, _COLUMN_INDEX, and _COLUMN_MANDATORY
           all have the same keys
-        * _PATH_TO_DATA is not an empty file
-        * The header of _PATH_TO_DATA has the same number of
+        * _PATH_TO_METADATA is not an empty file
+        * The header of _PATH_TO_METADATA has the same number of
           columns as keys in _COLUMN_DESCRIPTIONS
-        * The header of _PATH_TO_DATA has the same columns
+        * The header of _PATH_TO_METADATA has the same columns
           as keys in _COLUMN_DESCRIPTIONS
-        * The header of _PATH_TO_DATA is in the same order
+        * The header of _PATH_TO_METADATA is in the same order
           as the values in _COLUMN_INDEX
         * The column numbers in the values of _COLUMN_DESCRIPTIONS
           match the values in _COLUMN_INDEX
         * The column titles in the values of _COLUMN_DESCRIPTIONS
           match the keys of _COLUMN_DESCRIPTIONS
     """
-    global _PATH_TO_DATA 
+    global _PATH_TO_METADATA 
     global _COLUMN_DESCRIPTIONS 
     global _COLUMN_INDEX 
     global _COLUMN_MANDATORY 
 
-    if not os.path.exists(_PATH_TO_DATA):
-        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_DATA does not exist!')
-    if not os.path.isfile(_PATH_TO_DATA):
-        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_DATA is not a '
+    if not os.path.exists(_PATH_TO_METADATA):
+        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA does not exist!')
+    if not os.path.isfile(_PATH_TO_METADATA):
+        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA is not a '
                              'regular file!')
 
     if len(_COLUMN_DESCRIPTIONS) != len(_COLUMN_INDEX):
@@ -472,14 +472,14 @@ def verify_global_constants():
                                 '_COLUMN_MANDATORY have different keys!')
 
     try:
-        f = open(_PATH_TO_DATA, 'r')
+        f = open(_PATH_TO_METADATA, 'r')
     except:
-        print('GLOBAL VAR ERROR: _PATH_TO_DATA file open failed!')
+        print('GLOBAL VAR ERROR: _PATH_TO_METADATA file open failed!')
         return
     header = f.readline()
     f.close()
     if header == '':
-        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_DATA is an empty file!') 
+        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA is an empty file!') 
     header = header.strip().split(sep = '\t')
     if len(header) != len(desc_keys):
         raise AssertionError('GLOBAL VAR ERROR: _COLUMN_DESCRIPTIONS, '

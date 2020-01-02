@@ -5,24 +5,24 @@ import utils.external_metadata as em__
 import utils.geo_access as ga__
 
 # Global constants
-_PATH = '/home/nfox/projects/single_cell_database/database/'
+_PATH_TO_DATABASE = '/home/nfox/projects/single_cell_database/database/'
 _GSE_ID = 'GSE100320'
 
 # Global variables
 _new_uuid = ''
 
 def download_files():
-    global _PATH
+    global _PATH_TO_DATABASE
     global _new_uuid
     _new_uuid = ga__.download_series_to_db(_GSE_ID,
-                                           _PATH,
+                                           _PATH_TO_DATABASE,
                                            log = False)
 
 def make_loom_data():
-    global _PATH
+    global _PATH_TO_DATABASE
     global _new_uuid
-    expr_matrix, barcodes, features = cl__.get_expr_matrix_from_cellranger(_PATH + _new_uuid + '/')
-    cl__.create_loom_file(_PATH + _new_uuid + '/' + 'expr_mat.loom',
+    expr_matrix, barcodes, features = cl__.get_expr_matrix_from_cellranger(_PATH_TO_DATABASE + _new_uuid + '/')
+    cl__.create_loom_file(_PATH_TO_DATABASE + _new_uuid + '/' + 'expr_mat.loom',
                           expr_matrix,
                           barcodes,
                           features)
