@@ -19,13 +19,13 @@ import os
 import re
 
 # Global Variables
-_PATH_TO_DATA = '/home/nfox/projects/single_cell_database/sandbox/test_external_metadata.tsv'
+_PATH_TO_DATA = '/home/nfox/projects/single_cell_database/database/external_metadata.tsv'
 _COLUMN_DESCRIPTIONS = {
     'species': 
         (
             '01. Species\n'
             '    The species that the cells originated from. Should be a\n'
-            '    two word latin name in standard format. e.g. \"Homo sapiens\"'
+            '    two word scientific name in standard format. e.g. \"Homo sapiens\"'
         ),
     'organ':
         (
@@ -198,6 +198,7 @@ def append_row(new_row):
         if (_COLUMN_MANDATORY[k]) and (new_row[v] == ''):
             raise ValueError('Mandatory column is missing!')
     with open(_PATH_TO_DATA, 'a') as f:
+        f.write('\n')
         for i in range(len(new_row)):
             f.write(new_row[i])
             if i != (len(new_row) - 1):
@@ -520,7 +521,7 @@ def main():
 
 # Every time this module is run or imported, check
 # the integrity of the global constants.
-verify_global_constants()
+# verify_global_constants()
 
 if __name__ == '__main__':
     main()

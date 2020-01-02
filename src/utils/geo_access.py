@@ -329,7 +329,7 @@ def log_directory_listing(path, old_listing = None):
 
     # os.chdir(old_wd)
 
-def download_series_to_db(gse_id, path):
+def download_series_to_db(gse_id, path, log = True):
     """Downloads a GEO Series to the database.
 
     Downloads the SOFT file and all associated supplementary
@@ -341,6 +341,8 @@ def download_series_to_db(gse_id, path):
             e.g. GSE12345
         path: String. The path that the new entry's folder
             will be created in.
+        log: Boolean. If True, will log the edits made.
+             Otherwise, no log will be created.
     
     Returns:
         new_id: String. The name of the new entry's folder
@@ -349,15 +351,18 @@ def download_series_to_db(gse_id, path):
     Raises: None
     """
     new_id, path = build_new_entry_folder(path)
-    build_new_entry_log(new_id, gse_id, path)
-    old_listing = (set(get_directory_listing(path)),
-                   gu__.get_timestamp())
+    if log:
+        build_new_entry_log(new_id, gse_id, path)
+        old_listing = (set(get_directory_listing(path)),
+                    gu__.get_timestamp())
     get_series_soft_file(gse_id, path)
-    log_directory_listing(path, old_listing = old_listing)
-    old_listing = (set(get_directory_listing(path)),
-                   gu__.get_timestamp())
+    if log:
+        log_directory_listing(path, old_listing = old_listing)
+        old_listing = (set(get_directory_listing(path)),
+                    gu__.get_timestamp())
     get_series_suppl_files(gse_id, path)
-    log_directory_listing(path, old_listing = old_listing)
+    if log:
+        log_directory_listing(path, old_listing = old_listing)
     return(new_id)
 
     
