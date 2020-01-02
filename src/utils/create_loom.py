@@ -117,9 +117,6 @@ def get_expr_matrix_from_cellranger(path):
 
 def main():
     pass
-    # mat, barcodes, features = get_expr_matrix_from_cellranger('/home/nfox/projects/single_cell_database/sandbox/filtered_feature_bc_matrix/')
-    # create_loom_file('/home/nfox/projects/single_cell_database/sandbox/test_file.loom',
-    #                  mat, barcodes, features)
 
 if __name__ == '__main__':
     main()
