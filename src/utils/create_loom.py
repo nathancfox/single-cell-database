@@ -154,8 +154,8 @@ def get_expr_matrix_from_csv(path, rows = 'genes', **kwargs):
     elif rows != 'genes':
         raise ValueError('rows must be \'genes\' or \'cells\'!')
     mat = np.array(df)
-    barcodes = np.array(df.index)
-    features = np.array(df.columns)
+    barcodes = np.array(df.columns)
+    features = np.array(df.index)
     return(mat, barcodes, features)
 
 

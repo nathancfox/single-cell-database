@@ -95,8 +95,8 @@ _COLUMN_DESCRIPTIONS = {
         (
             '10. DOI\n'
             '    The DOI for the publication that presented these data.\n'
-            '    Must be in hyperlink format.\n'
-            '    e.g. \"https://doi.org/10.1038/s41467-019-13056-x\"'
+            '    Must be in minimal format\n'
+            '    e.g. \"10.1038/s41467-019-13056-x\"'
         ),
     'accession':
         (
