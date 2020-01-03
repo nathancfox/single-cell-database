@@ -7,7 +7,8 @@ import pandas as pd
 import scipy
 import utils.general_utils as gu__
 
-def create_loom_file(file_path, expr_matrix, barcodes, features):
+def create_loom_file(file_path, expr_matrix, barcodes, features,
+                     feat_acc = True):
     """Creates a loom file.
 
     Args:
@@ -18,22 +19,31 @@ def create_loom_file(file_path, expr_matrix, barcodes, features):
                 * scipy.sparse.coo_matrix
                 * scipy.sparse.csc_matrix
                 * scipy.sparse.csr_matrix
-            and it must have cells on the rows and genes
-            on the columns.
+            and it must have cells on the columns and
+            genes on the rows.
         barcodes: numpy.ndarray. Should be a single dimension
             array holding the cell IDs. Length must equal
-            the number of rows in expr_matrix.
+            the number of columns in expr_matrix.
         features: numpy.ndarray. Should be a single dimension
             array holding the gene IDs. Length must equal
-            the number of columns in expr_matrix.
+            the number of rows in expr_matrix.
+        feat_acc: Boolean. True if the features should be
+            stored under 'Accession' in the loom file. This
+            is appropriate for unique Ensemble IDs for instance.
+            If the features are human-readable gene names that
+            may not be unique, then they will be stored under
+            'Gene', and this argument should be False.
     
     Returns: None
     Raises: None
     """
     if os.path.exists(file_path):
         raise FileExistsError(f'{file_path} already exists!')
-    row_attrs = {'barcode': barcodes}
-    col_attrs = {'feature': features}
+    col_attrs = {'CellID': barcodes}
+    if feat_acc:
+        row_attrs = {'Accession': features}
+    else:
+        row_attrs = {'Gene': features}
     try:
         lp.create(file_path, expr_matrix, row_attrs, col_attrs)
     except MemoryError:
@@ -41,7 +51,7 @@ def create_loom_file(file_path, expr_matrix, barcodes, features):
         sys.exit(1)
 
 
-def get_expr_matrix_from_cellranger(path):
+def get_expr_matrix_from_cellranger(path, prefix):
     """Gets expression matrix, barcodes, features from Cell Ranger.
 
     Converts the matrices outputted by Cell Ranger into:
@@ -56,6 +66,8 @@ def get_expr_matrix_from_cellranger(path):
 
     Args:
         path: String to the folder holding the files
+        prefix: String. Prefix appended to the beginning of the
+            expected filenames. e.g. Sample1_barcodes.tsv
 
     Returns:
         A tuple with 3 members:
@@ -72,40 +84,40 @@ def get_expr_matrix_from_cellranger(path):
     barcode_file = ''
     feature_file = ''
     matrix_file = ''
-    if 'barcodes.tsv' in files:
-        barcode_file = os.path.join(path, 'barcodes.tsv')
-    elif 'barcodes.tsv.gz' in files:
-        gu__.gunzip(os.path.join(path, 'barcodes.tsv.gz'))
-        barcode_file = os.path.join(path, 'barcodes.tsv')
+    if prefix + 'barcodes.tsv' in files:
+        barcode_file = os.path.join(path, prefix, 'barcodes.tsv')
+    elif prefix + 'barcodes.tsv.gz' in files:
+        gu__.gunzip(os.path.join(path, prefix, 'barcodes.tsv.gz'))
+        barcode_file = os.path.join(path, prefix, 'barcodes.tsv')
     else:
         raise FileNotFoundError('barcodes file not found! Must be named '
-                                'barcodes.tsv or barcodes.tsv.gz')
+                                '*barcodes.tsv or *barcodes.tsv.gz')
 
-    if 'features.tsv' in files:
-        feature_file = os.path.join(path, 'features.tsv')
-    elif 'features.tsv.gz' in files:
-        gu__.gunzip(os.path.join(path, 'features.tsv.gz'))
-        feature_file = os.path.join(path, 'features.tsv')
-    elif 'genes.tsv' in files:
-        feature_file = os.path.join(path, 'genes.tsv')
-    elif 'genes.tsv.gz' in files:
-        gu__.gunzip(os.path.join(path, 'genes.tsv.gz'))
-        feature_file = os.path.join(path, 'genes.tsv')
+    if prefix + 'features.tsv' in files:
+        feature_file = os.path.join(path, prefix, 'features.tsv')
+    elif prefix + 'features.tsv.gz' in files:
+        gu__.gunzip(os.path.join(path, prefix, 'features.tsv.gz'))
+        feature_file = os.path.join(path, prefix, 'features.tsv')
+    elif prefix + 'genes.tsv' in files:
+        feature_file = os.path.join(path, prefix, 'genes.tsv')
+    elif prefix + 'genes.tsv.gz' in files:
+        gu__.gunzip(os.path.join(path, prefix, 'genes.tsv.gz'))
+        feature_file = os.path.join(path, prefix, 'genes.tsv')
     else:
         raise FileNotFoundError('features file not found! Must be named '
-                                'features.tsv, features.tsv.gz, genes.tsv, '
-                                'or genes.tsv.gz')
+                                '*features.tsv, *features.tsv.gz, *genes.tsv, '
+                                'or *genes.tsv.gz')
 
-    if 'matrix.mtx' in files:
-        matrix_file = os.path.join(path, 'matrix.mtx')
-    elif 'matrix.mtx.gz' in files:
-        gu__.gunzip(os.path.join(path, 'matrix.mtx.gz'))
-        matrix_file = os.path.join(path, 'matrix.mtx')
+    if prefix + 'matrix.mtx' in files:
+        matrix_file = os.path.join(path, prefix, 'matrix.mtx')
+    elif prefix + 'matrix.mtx.gz' in files:
+        gu__.gunzip(os.path.join(path, prefix, 'matrix.mtx.gz'))
+        matrix_file = os.path.join(path, prefix, 'matrix.mtx')
     else:
         raise FileNotFoundError('matrix file not found! Must be named '
-                                'matrix.mtx or matrix.mtx.gz')
+                                '*matrix.mtx or *matrix.mtx.gz')
 
-    mat = scipy.io.mmread(matrix_file).transpose()
+    mat = scipy.io.mmread(matrix_file)
     features_df = pd.read_csv(feature_file, sep = '\t', header = None)
     features = np.array(features_df.iloc[:, 0])
     barcodes_df = pd.read_csv(barcode_file, sep = '\t', header = None)
@@ -113,6 +125,38 @@ def get_expr_matrix_from_cellranger(path):
 
     return(mat, barcodes, features)
 
+def get_expr_matrix_from_csv(path, rows = 'genes', **kwargs):
+    """Gets expression matrix, barcodes, features from a csv-like file.
+
+    Converts a csv-like file with a header and rownames into:
+        1. A numpy ndarray holding the expression matrix.
+        2. A numpy ndarray holding the barcodes
+        3. A numpy ndarray holding the features
+
+    Args:
+        path: String. Path to the csv-like file.
+        rows: String. Must be 'genes' or 'cells'. Indicates the
+            rows variable in the file.
+        **kwargs: Passed to pandas.read_csv()
+
+    Returns:
+        A tuple with 3 members:
+            1. A numpy ndarray holding the expression matrix.
+               Barcodes = Rows; Features = Columns
+            2. A numpy ndarray holding the barcodes
+            3. A numpy ndarray holding the features
+    
+    Raises: None
+    """
+    df = pd.read_csv(path, **kwargs)
+    if rows == 'cells':
+        df = df.transpose()
+    elif rows != 'genes':
+        raise ValueError('rows must be \'genes\' or \'cells\'!')
+    mat = np.array(df)
+    barcodes = np.array(df.index)
+    features = np.array(df.columns)
+    return(mat, barcodes, features)
 
 
 def main():

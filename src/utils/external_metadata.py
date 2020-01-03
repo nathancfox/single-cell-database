@@ -134,8 +134,8 @@ _COLUMN_DESCRIPTIONS = {
     'internal':
         (
             '15. Internal\n'
-            '    Whether or not the dataset was scraped from a repository. '
-            '    False if it is internally generated data.'
+            '    Whether or not the dataset was scraped from a repository.\n'
+            '    False if it is internally generated data.\n'
             '    Must be one of these two values: {\"True\", \"False\"}.'
         )
 }
@@ -204,7 +204,7 @@ def append_row(new_row):
             if i != (len(new_row) - 1):
                 f.write('\t')
 
-def get_new_row_input():
+def get_new_row_input(pre_fill = None):
     """Get new entry from user.
 
     Provides a command line, interactive interface to
@@ -213,7 +213,11 @@ def get_new_row_input():
     external metadata file, rather they are returned
     as a list for external code to parse.
 
-    Args: None
+    Args:
+        pre_fill: Dict. Each key should be a column name in the
+            external metadata file. The values are values to
+            be automatically filled in, instead of taking the
+            value from the user.
     
     Returns:
         A list of strings, in order of the columns
@@ -223,21 +227,23 @@ def get_new_row_input():
         AssertionError: If any element of the returned
                         list did not get edited.
     """
-    print()
-    print('New Entry to External Metadata')
-    print('------------------------------')
-    print()
-    print('For each column, enter your value, then press Enter.')
-    print('If you do not have the information, simply press')
-    print('Enter without typing anything. If the column is mandatory,')
-    print('indicated with an *, the system will not accept an empty value.')
-    print()
-    print('To execute one of the following options, enter')
-    print('the command in any of the prompts.')
-    print('    QUIT    : Abort this new entry')
-    print('    RESTART : Start over')
-    print('    DESC    : Get a column description')
-    print()
+    intro_text = (
+                   '\n'
+                   'New Entry to External Metadata\n'
+                   '------------------------------'
+                   '\n'
+                   'For each column, enter your value, then press Enter.\n'
+                   'If you do not have the information, simply press\n'
+                   'Enter without typing anything. If the column is mandatory,\n'
+                   'indicated with an *, the system will not accept an empty value.\n'
+                   '\n'
+                   'To execute one of the following options, enter\n'
+                   'the command in any of the prompts.\n'
+                   '    QUIT    : Abort this new entry\n'
+                   '    RESTART : Start over\n'
+                   '    DESC    : Get a column description\n'
+                 )
+    print(intro_text)
     input('Press Enter to continue...')
     print()
     global _COLUMN_DESCRIPTIONS
@@ -250,32 +256,28 @@ def get_new_row_input():
         column_name = _COLUMN_DESCRIPTIONS[colnames[col_idx]]
         column_name = column_name.split('\n')[0][4:]
         if _COLUMN_MANDATORY[colnames[col_idx]]:
-            print('Column {:02}: {:s}*'.format(col_idx + 1, column_name))
+            print(f'Column {col_idx + 1:02d}: {column_name}*')
         else:
-            print('Column {:02}: {:s}'.format(col_idx + 1, column_name))
-        user_input = input('> ')
+            print(f'Column {col_idx + 1:02d}: {column_name}')
+        if pre_fill is not None:
+            if type(pre_fill) != dict:
+                raise ValueError('pre_fill must be dict!')
+            if colnames[col_idx] in pre_fill.keys():
+                print('**AUTOMATICALLY FILLED IN**')
+                user_input = str(pre_fill[colnames[col_idx]])
+                if user_input in ['QUIT', 'RESTART', 'DESC']:
+                    raise ValueError('Values in pre_fill cannot be commands '
+                                     'in [\'QUIT\', \'RESTART\', \'DESC\']!')
+            else:
+                user_input = input('> ')
+        else:
+            user_input = input('> ')
         if user_input == 'QUIT':
             print('\nExiting...')
             return
         elif user_input == 'RESTART':
             print('\nStarting over...')
-            print()
-            print('New Entry to External Metadata')
-            print('------------------------------')
-            print()
-            print('For each column, enter your value, then press Enter.')
-            print('If you do not have the information, simply press')
-            print('Enter without typing anything. However, if the column')
-            print('is mandatory, the system will not accept an empty value.')
-            print()
-            print('To execute one of the following options, enter')
-            print('the corresponding command in any of the prompts.')
-            print('    Abort Entry             : QUIT')
-            print('    Start Over              : RESTART')
-            print('    Get a Column Description: DESC')
-            print()
-            input('Press Enter to continue...')
-            print()
+            print(intro_text)
             loop = True
             colnames = get_column_names()
             col_idx = 0
@@ -287,9 +289,15 @@ def get_new_row_input():
             print()
             continue
         elif _COLUMN_MANDATORY[colnames[col_idx]] and (user_input) == '':
-            print()
-            print('ERROR: This column is mandatory, please enter a value!')
-            print()
+            if pre_fill is not None:
+                if colnames[col_idx] in pre_fill.keys():
+                    raise ValueError(f'{colnames[col_idx]} is mandatory! '
+                                      'It cannot be pre-filled with an '
+                                      'empty string!')
+            else:
+                print()
+                print('ERROR: This column is mandatory, please enter a value!')
+                print()
             continue
         else:
             new_vals[col_idx] = user_input
@@ -517,7 +525,7 @@ def verify_global_constants():
                                  'may be the problem.')
 
 def main():
-    pass
+    get_new_row_input()
 
 # Every time this module is run or imported, check
 # the integrity of the global constants.
