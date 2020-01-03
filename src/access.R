@@ -1,4 +1,16 @@
 PATH_TO_METADATA <- "/data/single_cell_database/external_metadata.tsv"
+ARRAY_WARNING <- paste("\nWARNING!! R and Python interpret binary matrices\n",
+                       "in transposed ways. R uses column-major order and\n",
+                       "Python uses row-major order. Because the database\n",
+                       "entries are created in Python, this means that all\n",
+                       "n-D HDF5 datasets (where n > 1) accessed manually\n",
+                       "from an HDF5 or loom connection will be returned\n",
+                       "transposed, i.e. cells x genes. However, cell metadata\n",
+                       "will still be in the \"colattrs\" HDF5 group and\n",
+                       "vice versa for genes.\n\n",
+                       "To silence this warning, change the warning flag\n",
+                       "in the function arguments.\n",
+                       sep = "")
 
 get_loom_filename <- function(uuid) {
     df = read.table(PATH_TO_METADATA,
@@ -15,13 +27,16 @@ get_loom_filename <- function(uuid) {
     return(filename)
 }
 
-get_h5_conn <- function(uuid) {
+get_h5_conn <- function(uuid, warning = TRUE) {
     lfile <- hdf5r::H5File$new(get_loom_filename(uuid),
                                mode = "r")
+    if (warning) {
+        cat(ARRAY_WARNING, "\n")
+    }
     return(lfile)
 }
 
-get_loom_conn <- function(uuid) {
+get_loom_conn <- function(uuid, warning = TRUE) {
     # loomR fails to validate because it does not have
     # updated specs for loom 3.0, however if you
     # turn off the validation, it throws a warning.
@@ -31,6 +46,9 @@ get_loom_conn <- function(uuid) {
                                 mode = "r",
                                 skip.validate = TRUE)
     )
+    if (warning) {
+        cat(ARRAY_WARNING, "\n")
+    }
     return(lfile)
 }
 
