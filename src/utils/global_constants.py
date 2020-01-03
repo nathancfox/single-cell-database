@@ -1,5 +1,8 @@
-_PATH_TO_DATABASE = '/home/nfox/projects/single_cell_database/database/'
-_PATH_TO_METADATA = '/home/nfox/projects/single_cell_database/database/external_metadata.tsv'
+# These 2 are mirrored in the access.R file.
+# If you ever change these, MAKE SURE TO UPDATE
+# THE ONES IN THE access.R FILE!
+_PATH_TO_DATABASE = '/data/single_cell_database'
+_PATH_TO_METADATA = '/data/single_cell_database/external_metadata.tsv'
 _COLUMN_DESCRIPTIONS = {
     'species': 
         (
