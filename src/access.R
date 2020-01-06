@@ -8,10 +8,20 @@ ARRAY_WARNING <- paste("\nWARNING!! R and Python interpret binary matrices\n",
                        "transposed, i.e. cells x genes. However, cell metadata\n",
                        "will still be in the \"colattrs\" HDF5 group and\n",
                        "vice versa for genes.\n\n",
-                       "To silence this warning, change the warning flag\n",
-                       "in the function arguments.\n",
+                       "To silence this warning, pass the function arg:\n",
+                       "    \"warning = FALSE\"\n",
                        sep = "")
 
+#' Get a loom filename.
+#' 
+#' \code{get_loom_filename()} returns the full filepath to the
+#' loom file associated with the passed UUID.
+#' 
+#' This filepath is retrieved from the external metadata file.
+#' If the file does not exist, an error will be thrown.
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @return Character vector of length 1 containing the full path to
+#'   the desired loom file.
 get_loom_filename <- function(uuid) {
     df = read.table(PATH_TO_METADATA,
                     header = TRUE,
@@ -24,9 +34,25 @@ get_loom_filename <- function(uuid) {
     }
     filename <- df[df$uuid == uuid, "file_location"]
     filename = file.path(filename, "expr_mat.loom")
+    if (!(file.exists(filename))) {
+        stop("Retrieved filename does not exist!")
+    }
     return(filename)
 }
 
+#' Get an hdf5r connection to a loom file.
+#' 
+#' \code{get_h5_conn()} returns an hdf5r H5File
+#' connection object to the loom file associated
+#' with the passed UUID.
+#' 
+#' The only mode is read-only.
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @param warning Logical vector of length 1. If \code{TRUE}, a long
+#'   warning will be displayed, reminding the user that R accesses
+#'   the loom file in column-major order, but that the file is stored
+#'   in row-major order. Thus all accessed matrices will be transposed.
+#' @return H5File connection to the desired loom file.
 get_h5_conn <- function(uuid, warning = TRUE) {
     lfile <- hdf5r::H5File$new(get_loom_filename(uuid),
                                mode = "r")
@@ -36,6 +62,19 @@ get_h5_conn <- function(uuid, warning = TRUE) {
     return(lfile)
 }
 
+#' Get a loomR connection to a loom file.
+#' 
+#' \code{get_loom_conn()} returns an loomR
+#' connection object to the loom file associated
+#' with the passed UUID.
+#' 
+#' The only mode is read-only.
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @param warning Logical vector of length 1. If \code{TRUE}, a long
+#'   warning will be displayed, reminding the user that R accesses
+#'   the loom file in column-major order, but that the file is stored
+#'   in row-major order. Thus all accessed matrices will be transposed.
+#' @return loomR connection to the desired loom file.
 get_loom_conn <- function(uuid, warning = TRUE) {
     # loomR fails to validate because it does not have
     # updated specs for loom 3.0, however if you
@@ -52,6 +91,59 @@ get_loom_conn <- function(uuid, warning = TRUE) {
     return(lfile)
 }
 
+#' Get a SingleCellExperiment object from a loom file.
+#' 
+#' \code{get_sce()} returns a SingleCellExperiment object
+#' containing the entire loom file loaded completely into
+#' memory.
+#' 
+#' The loom file associated with the UUID is the one
+#' loaded into an SCE object. The other 3 function arguments
+#' allows any configuration of SingleCellExperiment assays.
+#' 
+#' @section Assay assignment:
+#' The loom file has a main matrix in the HDF5 dataset 'matrix'.
+#' The rest of the matrices, if available, are under the
+#' HDF5 group 'layers', as datasets of their own. SingleCellExperiment
+#' objects typically have the raw counts stored under the assay "counts",
+#' and the log-normalized counts stored under the assay "logcounts".
+#' Other matrices can be named anything. The \code{assay_for_matrix}
+#' argument should hold the name of the assay that the 'matrix' dataset
+#' should be stored in. Then, the \code{counts_assay} and
+#' \code{logcounts_assay} arguments can hold the names of HDF5 layers
+#' that should be stored in "counts" or "logcounts" assays respectively.
+#' For example: if the loom file has a raw reads matrix in 'matrix'
+#' and a normalized matrix in 'norm' and a 3rd matrix in 'misc', the
+#' appropriate function call would be:
+#' \code{get_sce(UUID,
+#'               assay_for_matrix = "counts",
+#'               counts_assay = NULL,
+#'               logcounts_assay = "norm")}
+#' However, if the 3rd matrix was in 'matrix' and the raw reads and
+#' normalized reads were in 'raw' and 'norm', the appropriate function
+#' call would be:
+#' \code{get_sce(UUID,
+#'               assay_for_matrix = "misc",
+#'               counts_assay = "raw",
+#'               logcounts_assay = "norm")}
+#' 
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @param assay_for_matrix Character vector of length 1. The name of the
+#'   assay that the 'matrix' dataset should be stored in.
+#' @param counts_assay Character vector of length 1, or NULL. If not NULL,
+#'   must be the name of an HDF5 dataset under 'layers' that will be
+#'   stored under the "counts" assay of the returned SingleCellExperiment
+#'   object. For obvious reasons, this argument cannot be not NULL if
+#'   \code{assay_for_matrix} == "counts".
+#' @param logcounts_assay Character vector of length 1, or NULL. If not NULL,
+#'   must be the name of an HDF5 dataset under 'layers' that will be
+#'   stored under the "logcounts" assay of the returned SingleCellExperiment
+#'   object. For obvious reasons, this argument cannot be not NULL if
+#'   \code{assay_for_matrix} == "logcounts".
+#' @return SingleCellExperiment object with the assays as assigned and the
+#'   'col_attrs' datasets consolidated into
+#'   \code{SingleCellExperiment::colData()} and the 'row_attrs' dataset
+#'   consolidated into \code{SingleCellExperiment::rowData()}.
 get_sce <- function(uuid,
                     assay_for_matrix = "counts",
                     counts_assay = NULL,

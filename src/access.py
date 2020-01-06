@@ -9,6 +9,24 @@ import global_constants as GC
 import external_metadata as em__
 
 def get_loom_filename(uuid):
+    """Get loom filename for dataset entry.
+
+    Given a UUID, get the filepath to the associated
+    loom file from the external metadata file.
+
+    Args:
+        uuid: String. UUID of the desired dataset
+    
+    Returns:
+        String containing the filepath of the loom file
+        associated with that UUID.
+
+    Raises:
+        ValueError: Raised if uuid is not in the external
+            metadata file.
+        AssertionError: Raised if the filepath to be returned
+            does not exist.
+    """
     df = em__.get_as_dataframe()
     if uuid not in list(df['uuid']):
         raise ValueError('uuid is not valid!')
@@ -19,6 +37,23 @@ def get_loom_filename(uuid):
     return(filename)
 
 def get_h5_conn(uuid, write = False):
+    """Get h5py file connection for dataset loom file.
+
+    Given a UUID, get an h5py File connection object
+    for the associated loom file.
+
+    Args:
+        uuid: Strong. UUID of the desired dataset
+        write: Boolean. If True, the File object
+            will have write access. Note that this
+            is a temporary feature during development
+            and will not be available in the final version.
+
+    Returns:
+        h5py File object to the desired loom file
+
+    Raises: None
+    """
     if write:
         lfile = h5.File(get_loom_filename(uuid), 'r+')
     else:
@@ -26,10 +61,39 @@ def get_h5_conn(uuid, write = False):
     return(lfile)
 
 def get_loom_conn(uuid):
+    """Get loompy file connection for dataset loom file.
+
+    Given a UUID, get a loompy file connection object
+    for the associated loom file.
+
+    Args:
+        uuid: String. UUID of the desired dataset
+
+    Returns:
+        loompy LoomConnection object to the desired loom file
+
+    Raises: None
+    """
     lfile = lp.connect(get_loom_filename(uuid), 'r')
     return(lfile)
 
 def get_anndata(uuid, **kwargs):
+    """Get an AnnData object from a dataset.
+
+    Given a UUID, loads the associated loom file
+    completely into memory into a scanpy AnnData object.
+
+    Args:
+        uuid: String. UUID of the desired dataset
+        **kwargs: Keyword arguments passed to
+            scanpy.read_loom()
+    
+    Returns:
+        AnnData object holding the dataset from the
+        desired loom file.
+    
+    Raises: None
+    """
     # Handles the loom convention that genes may be named
     # in the 'Gene' or 'Accession' row attribute.
     if 'var_names' not in kwargs.keys():
