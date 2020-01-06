@@ -5,8 +5,8 @@ import h5py as h5
 import loompy as lp
 import scanpy as sc
 import pandas as pd
-import utils.global_constants as GC
-import utils.external_metadata as em__
+import global_constants as GC
+import external_metadata as em__
 
 def get_loom_filename(uuid):
     df = em__.get_as_dataframe()

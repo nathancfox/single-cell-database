@@ -2,8 +2,8 @@ import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import pandas as pd
 import datetime as dt
-import utils.geo_access as ga__
-import utils.general_utils as gu__
+import geo_access as ga__
+import general_utils as gu__
 
 def download_devel_data():
     """Downloads development data.

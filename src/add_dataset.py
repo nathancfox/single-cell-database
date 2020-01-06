@@ -1,11 +1,11 @@
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import os
-import utils.create_loom as cl__
-import utils.external_metadata as em__
-import utils.geo_access as ga__
-import utils.general_utils as gu__
-import utils.global_constants as GC
+import create_loom as cl__
+import external_metadata as em__
+import geo_access as ga__
+import general_utils as gu__
+import global_constants as GC
 
 # Global variables
 _gse_id = ''

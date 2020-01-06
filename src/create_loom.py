@@ -5,7 +5,7 @@ import loompy as lp
 import numpy as np
 import pandas as pd
 import scipy
-import utils.general_utils as gu__
+import general_utils as gu__
 
 def create_loom_file(file_path, expr_matrix, barcodes, features,
                      feat_acc = True):

@@ -21,7 +21,7 @@ sys.path.append('/home/nfox/projects/single_cell_database/src')
 import pandas as pd
 import os
 import re
-import utils.global_constants as GC
+import global_constants as GC
 
 def append_row(new_row):
     """Append a new entry to the external metadata database.

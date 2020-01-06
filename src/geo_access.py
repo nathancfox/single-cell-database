@@ -2,7 +2,7 @@ import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import os
 import datetime as dt
-import utils.general_utils as gu__
+import general_utils as gu__
 
 def convert_gse_to_folder(gse_id):
     """Converts GEO Series ID to FTP folder.
