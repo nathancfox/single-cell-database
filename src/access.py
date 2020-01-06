@@ -18,8 +18,11 @@ def get_loom_filename(uuid):
     filename = os.path.join(filename, 'expr_mat.loom')
     return(filename)
 
-def get_h5_conn(uuid):
-    lfile = h5.File(get_loom_filename(uuid), 'r')
+def get_h5_conn(uuid, write = False):
+    if write:
+        lfile = h5.File(get_loom_filename(uuid), 'r+')
+    else:
+        lfile = h5.File(get_loom_filename(uuid), 'r')
     return(lfile)
 
 def get_loom_conn(uuid):
