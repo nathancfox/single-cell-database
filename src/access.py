@@ -195,6 +195,10 @@ def get_gene_author_annot(uuid):
     data = im__.get_gene_int_md_author_annot(uuid)
     return(data)
 
+def get_extern_md():
+    """Gets external metadata as pandas DataFrame."""
+    return(em__.get_as_dataframe())
+
 def main():
     pass
 

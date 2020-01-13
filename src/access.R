@@ -480,3 +480,22 @@ get_gene_author_annot <- function(uuid) {
     lfile$close_all()
     return(row_data)
 }
+
+get_extern_md <- function() {
+    df <- read.table(PATH_TO_METADATA,
+                     header = TRUE,
+                     sep = "\t",
+                     quote = "",
+                     stringsAsFactors = TRUE)
+    df$condition <- as.logical(df$condition)
+    df$date_generated <- as.Date(df$date_generated)
+    df$umis <- as.logical(df$umis)
+    df$spikeins <- as.logical(df$spikeins)
+    df$doi <- as.character(df$doi)
+    df$accession <- as.character(df$accession)
+    df$date_integrated <- as.Date(df$date_integrated)
+    df$uuid <- as.character(df$uuid)
+    df$file_location <- as.character(df$file_location)
+    df$internal <- as.logical(df$internal)
+    return(df)
+}

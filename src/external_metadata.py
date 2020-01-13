@@ -233,7 +233,8 @@ def get_as_dataframe():
     df = pd.read_csv(GC._PATH_TO_METADATA,
                      sep = '\t',
                      header = 0,
-                     index_col = None)
+                     index_col = None,
+                     parse_dates = ['date_generated', 'date_integrated'])
     return(df)
 
 def get_shape():
