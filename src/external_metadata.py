@@ -284,9 +284,9 @@ def uuid_to_row(uuid_key, columns = None):
         IndexError: if the uuid_key is not a valid lookup.
     """
     df = get_as_dataframe()
-    if uuid_key not in df['uuid']:
+    if uuid_key not in list(df['uuid']):
         raise IndexError('UUID not found in metadata file!')
-    row = pd.Series(df[df['uuid'] == uuid_key, :])
+    row = pd.Series(df[df['uuid'] == uuid_key].iloc[0])
     if columns is None:
         return(row)
     else:
