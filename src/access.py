@@ -4,9 +4,10 @@ import os
 import h5py as h5
 import loompy as lp
 import scanpy as sc
+import numpy as np
 import pandas as pd
-import global_constants as GC
 import external_metadata as em__
+import internal_metadata as im__
 
 def get_loom_filename(uuid):
     """Get loom filename for dataset entry.
@@ -104,8 +105,95 @@ def get_anndata(uuid, **kwargs):
             kwargs['var_names'] = 'Accession'
         else:
             pass
+    lfile.close()
     adata = sc.read_loom(get_loom_filename(uuid), **kwargs)
     return(adata)
+
+def get_cell_univ(uuid, keep_missing = True):
+    """Get the cell universal metadata.
+
+    Get the cell universal metadata from the given dataset
+    as a Pandas DataFrame. Wrapper for the actual method
+    in internal_metadata.py
+
+    Args:
+        uuid: String. UUID of the desired dataset
+        keep_missing: bool. If True, missing columns will
+            be retained as columns of all -1 or "-1".
+            If False, they are dropped from the returned DataFrame.
+    
+    Returns:
+        Pandas DataFrame with the same number of rows as cells
+        in the dataset and where each column is a universal
+        internal metadata field.
+
+    Raises: None
+    """
+    data = im__.get_cell_int_md_univ(uuid, keep_missing)
+    return(data)
+
+def get_gene_univ(uuid, keep_missing = True):
+    """Get the gene universal metadata.
+
+    Get the gene universal metadata from the given dataset
+    as a Pandas DataFrame. Wrapper for the actual method
+    in internal_metadata.py
+
+    Args:
+        uuid: String. UUID of the desired dataset
+        keep_missing: bool. If True, missing columns will
+            be retained as columns of all -1 or "-1".
+            If False, they are dropped from the returned DataFrame.
+    
+    Returns:
+        Pandas DataFrame with the same number of rows as genes
+        in the dataset and where each column is a universal
+        internal metadata field.
+
+    Raises: None
+    """
+    data = im__.get_gene_int_md_univ(uuid, keep_missing)
+    return(data)
+
+def get_cell_author_annot(uuid):
+    """Get the cell author-annotated metadata.
+
+    Get the cell author-annotated metadata from the given
+    dataset as a Pandas DataFrame. Wrapper for the
+    actual method in internal_metadata.py
+
+    Args:
+        uuid: String. UUID of the desired dataset
+
+    Returns:
+        Pandas DataFrame with the same number of rows as cells
+        in the dataset and where each column is an
+        author-annotated internal metadata field.
+    
+    Raises: None
+    """
+    data = im__.get_cell_int_md_author_annot(uuid)
+    return(data)
+
+def get_gene_author_annot(uuid):
+    """Get the gene author-annotated metadata.
+
+    Get the gene author-annotated metadata from the given
+    dataset as a Pandas DataFrame. Wrapper for the
+    actual method in internal_metadata.py
+
+    Args:
+        uuid: String. UUID of the desired dataset
+
+    Returns:
+        Pandas DataFrame with the same number of rows as genes
+        in the dataset and where each column is an
+        author-annotated internal metadata field.
+    
+    Raises: None
+    """
+    data = im__.get_gene_int_md_author_annot(uuid)
+    return(data)
 
 def main():
     pass
