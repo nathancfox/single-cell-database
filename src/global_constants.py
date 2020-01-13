@@ -3,25 +3,32 @@
 # THE ONES IN THE access.R FILE!
 _PATH_TO_DATABASE = '/data/single_cell_database'
 _PATH_TO_METADATA = '/data/single_cell_database/external_metadata.tsv'
-_COLUMN_DESCRIPTIONS = {
+
+_EM_COLUMN_DESCRIPTIONS = {
     'species': 
         (
             '01. Species\n'
             '    The species that the cells originated from. Should be a\n'
-            '    two word scientific name in standard format. e.g. \"Homo sapiens\"'
+            '    two word scientific name in standard format. If there is\n'
+            '    additional information, such as a string, it may be added\n'
+            '    after a \"|\" delimiter. You can have multiple species/strains\n'
+            '    in a dataset. These should be \";\" delimited.'
+            '    e.g. \"Homo sapiens\", \"Mus musculus;Escherichia coli|K-12\"'
         ),
-    'organ':
+    'tissue':
         (
-            '02. Organ\n'
-            '    The organ that the cells originated from. Should be all\n'
-            '    lowercase and as simple and high-level as possible.\n'
+            '02. Tissue\n'
+            '    The tissue/organ that the cells originated from. Must be from\n'
+            '    the TISSUE_LIST. Enter \"LIST\" to view the options. Multiple\n'
+            '    tissues in a dataset can be \";\" delimited.\n'
             '    e.g. \"brain\", \"kidney\", \"blood\"'
         ),
     'number_of_cells':
         (
             '03. Number of Cells\n'
             '    The number of cells in this dataset. Should just be a\n'
-            '    simple integer. e.g. \"5402\"'
+            '    simple, non-negative integer.\n'
+            '    e.g. \"5402\"'
         ),
     'condition':
         (
@@ -29,34 +36,36 @@ _COLUMN_DESCRIPTIONS = {
             '    Whether or not these cells fall under a disease condition\n'
             '    or an experimental condition. Must be one of these two\n'
             '    values: {\"True\", \"False\"}. Should be True if these are\n'
-            '    assumed to be normal cells from a healthy organisms.\n'
-            '    Should be False otherwise. This could be False if the\n'
+            '    assumed to be normal cells from a healthy organism.\n'
+            '    Should be \"False\" otherwise. This could be \"False\" if the\n'
             '    organism is unhealthy, if the cells came from a tumor,\n'
             '    if the organism or cells were subject to an experimental\n'
-            '    condition other than control.'
+            '    condition other than control, etc.'
         ),
     'date_generated':
         (
             '05. Date Generated\n'
-            '    The date that these data were created. Often, the date\n'
+            '    The date that these data were created. Typically, the date\n'
             '    of the publication reporting this dataset is used.\n'
-            '    Must be in YYYY-MM-DD format. e.g. \"2019-01-01\"'
+            '    Must be in YYYY-MM-DD format.\n'
+            '    e.g. \"2019-01-01\"'
         ),
     'count_format':
         (
             '06. Count Format\n'
             '    The format of the expression values in the actual data.\n'
-            '    Are the read counts raw? Normalized? TPM? Should be\n'
-            '    one of the following:\n'
+            '    Refers to the normalization state of the data. There can be\n'
+            '    multiple values here, delimited by \";\". The first value\n'
+            '    MUST correspond to the expression matrix under lfile[\'matrix\'].\n'
+            '    If there are multiple matrices under lfile[\'layers\'], the\n'
+            '    HDF5 datasets should be named their corresponding \'count_format\'\n'
+            '    value. Must be one of the following values:\n'
             '        {\n'
-            '         \'raw\', \'cpm\', \'tpm\', \'rpkm\',\n'
-            '         \'fpkm\', \'other: DESCRIPTION\'\n'
+            '         \'raw\', \'cpm\', \'tpm\',\n'
+            '         \'rpkm\', \'fpkm\'\n'
             '        }\n'
-            '    where DESCRIPTION can be anything that adequately describes\n'
-            '    the format of the read counts. If multiple versions are\n'
-            '    available, the one stored in \'matrix\' should be first.'
-            '    They should be comma-delimited.'
-            '    e.g. raw_tpm_other: normalized to 500,000'
+            '    Enter \"LIST\" to view these options.'
+            '    e.g. raw;tpm;OTHER'
         ),
     'umis':
         (
@@ -75,7 +84,8 @@ _COLUMN_DESCRIPTIONS = {
             '09. Technology\n'
             '    The protocol used to capture and sequence the reads.\n'
             '    Should be all lowercase and only alphanumeric.\n'
-            '    e.g. \"10xchromiumv2\", \"smartseq2\", \"celseq\"'
+            '    Enter \"LIST\" to view existing values.\n'
+            '    e.g. \"10xchromiumv2\", \"smartseq2\"'
         ),
     'doi':
         (
@@ -95,8 +105,9 @@ _COLUMN_DESCRIPTIONS = {
     'date_integrated':
         (
             '12. Date Integrated\n'
-            '    The date that these data were entered into this database.\n'
-            '    Must be in YYYY-MM-DD format. e.g. \"2019-01-01\"'
+            '    The date that this dataset was entered into this database.\n'
+            '    Must be in YYYY-MM-DD format.\n'
+            '    e.g. \"2019-01-01\"'
         ),
     'uuid':
         (
@@ -106,7 +117,7 @@ _COLUMN_DESCRIPTIONS = {
             '    Must be in the string form of a UUID:\n'
             '        12345678-1234-5678-1234-567812345678\n'
             '    where each of the 32 digits is one hexadecimal digit.\n'
-            '    This can be gotten with str(uuid), if uuid is a \n'
+            '    This can be gotten with str(uuid), if uuid is a\n'
             '    python class uuid.UUID'
         ),
     'file_location':
@@ -125,9 +136,9 @@ _COLUMN_DESCRIPTIONS = {
             '    Must be one of these two values: {\"True\", \"False\"}.'
         )
 }
-_COLUMN_INDEX = {
+_EM_COLUMN_INDEX = {
     'species'        : 0,
-    'organ'          : 1,
+    'tissue'         : 1,
     'number_of_cells': 2,
     'condition'      : 3,
     'date_generated' : 4,
@@ -142,9 +153,9 @@ _COLUMN_INDEX = {
     'file_location'  : 13,
     'internal'       : 14
 }
-_COLUMN_MANDATORY = {
+_EM_COLUMN_MANDATORY = {
     'species'        : True,
-    'organ'          : False,
+    'tissue'         : False,
     'number_of_cells': True, 
     'condition'      : False,
     'date_generated' : True,
@@ -158,4 +169,196 @@ _COLUMN_MANDATORY = {
     'uuid'           : True,
     'file_location'  : True,
     'internal'       : True
+}
+
+_IMU_COL_COLUMN_DESCRIPTIONS = {
+    'cluster':
+        (
+            '01. Cluster\n'
+            '    The most specific cell grouping provided by the authors.\n'
+            '    These should generally correspond to cell type, but this\n'
+            '    is a gray area and is up for debate.\n'
+            '\n'
+            '    Missing values are designated with \"-1\". If a cell\'s value\n'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
+            '    This is a mapping from non-negative integers to descriptions\n'
+            '    in the HDF5 attribute \"desc\".'
+        ),
+    'species':
+        (
+            '02. Species\n'
+            '    The species of origin for the cells. Must be the correctly\n'
+            '    capitalized scientific name. If there is additional\n'
+            '    information, such as a strain, it may be added after a\n'
+            '    \"|\" (vertical bar) delimiter. e.g. \"Escherichia coli|K-12\"\n'
+            '\n'
+            '    Missing values are designated with \"-1\". If a cell\'s value\n'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"'
+        ),
+    'tissue':
+        (
+            '03. Tissue\n'
+            '    The tissue of origin, taken from the Tissue List. This should\n'
+            '    not be a parallel of cluster. this field is intended to be a more\n'
+            '    high-level organizing field, especially if multiple datasets are\n'
+            '    concatenated or if a dataset took cells from multiple tissues.\n'
+            '\n'
+            '    Missing values are designated with \"-1\". If a cell\'s value\n'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"'
+        ),
+    'source_organism':
+        (
+            '04. Source Organism\n'
+            '    The specific organism of origin. For example, if cells\n'
+            '    from multiple mice were pooled, the original mouse ID\n'
+            '    should be stored here. This is a mapping from non-negative\n'
+            '    integers to descriptions in the HDF5 attribute \"desc\".\n'
+            '\n'
+            '    Missing values are designated with \"-1\". If a cell\'s value\n'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
+            '    This is a mapping from non-negative integers to descriptions\n'
+            '    in the HDF5 attribute \"desc\".'
+        ),
+    'sex':
+        (
+            '05. Sex\n'
+            '    The sex of the organism of origin. \"M\" for cis-canonical\n'
+            '    male and \"F\" for cis-canonical female.\n'
+            '\n'
+            '    Missing values are designated with \"-1\". If a cell\'s value\n'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"'
+        ),
+    'batch':
+        (
+            '06. Batch\n'
+            '    Any batch variable not covered by source_organism, sex, or\n'
+            '    condition. If there are multiple batch variables remaining,\n'
+            '    they should be \"|\"-concatenated to form all possible\n'
+            '    combinations.\n'
+            '\n'
+            '    Missing values are designated with \"-1\". If a cell\'s value\n'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
+            '    This is a mapping from non-negative integers to descriptions\n'
+            '    in the HDF5 attribute \"desc\".'
+        ),
+    'condition':
+        (
+            '07. Condition\n'
+            '    The experimental or disease condition of the cell. If they are\n'
+            '    healthy, untreated cells, this value should be \"0\".\n'
+            '\n'
+            '    Missing values are designated with \"-1\". If a cell\'s value\n'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
+            '    This is a mapping from non-negative integers to descriptions\n'
+            '    in the HDF5 attribute \"desc\".'
+        ),
+    'uuid':
+        (
+            '08. UUID\n'
+            '    The UUID of the dataset entry the cell is associated with.\n'
+            '    Should be identical for all cells inside a single dataset\n'
+            '    entry. This field is intended for when a user concatenates\n'
+            '    cells from multiple datasets.'
+        )
+}
+
+_IMU_COL_COLUMN_INDEX = {
+    'cluster'        : 0,
+    'species'        : 1,
+    'tissue'         : 2,
+    'source_organism': 3,
+    'sex'            : 4,
+    'batch'          : 5,
+    'condition'      : 6,
+    'uuid'           : 7
+}
+
+_IMU_COL_COLUMN_MANDATORY = {
+    'cluster'        : False,
+    'species'        : False,
+    'tissue'         : False,
+    'source_organism': False,
+    'sex'            : False,
+    'batch'          : False,
+    'condition'      : False,
+    'uuid'           : True
+}
+
+_IMU_ROW_COLUMN_DESCRIPTIONS = {}
+_IMU_ROW_COLUMN_INDEX = {}
+_IMU_ROW_COLUMN_MANDATORY = {}
+
+_TISSUE_LIST = {
+    'Nervous':
+        [
+            'brain',
+            'spinal cord',
+            'peripheral nervous system'
+        ],
+    'Respiratory':
+        [
+            'lung',
+            'trachea'
+        ],
+    'Digestive':
+        [
+            'tongue',
+            'esophagus',
+            'stomach',
+            'liver',
+            'gall bladder',
+            'pancreas',
+            'small intestine',
+            'large intestine'
+        ],
+    'Cardiovascular':
+        [
+            'heart',
+            'vasculature',
+            'blood'
+        ],
+    'Immune':
+        [
+            'spleen',
+            'thymus',
+            'lymph node'
+        ],
+    'Urinary':
+        [
+            'urethra',
+            'kidney',
+            'urinary bladder'
+        ],
+    'Musculoskeletal':
+        [
+            'ligament',
+            'tendon',
+            'skeletal muscle',
+            'smooth muscle',
+            'bone'
+        ],
+    'Gland':
+        [
+            'thyroid gland'
+        ],
+    'Reproductive':
+        [
+            'uterus',
+            'placenta',
+            'ovary',
+            'clitoris',
+            'vagina',
+            'testis',
+            'penis'
+        ],
+    'Sensory':
+        [
+            'ear',
+            'eye',
+            'nose'
+        ],
+    'Skin':
+        [
+            'skin'
+        ]
 }
