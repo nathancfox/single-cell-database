@@ -13,14 +13,48 @@ _new_uuid = ''
 
 def print_workflow():
     workflow = (
-                 '1. set_new_entry(gse_id)\n'
-                 '2. download_files()\n'
-                 '3. Rename files appropriately\n'
-                 '4. make_loom_data(prefix)\n'
-                 '5. add_external_metadata()'
+                 '01. ad__.set_new_entry(gse_id)\n'
+                 '02. ad__.download_files()\n'
+                 '03. Rename files appropriately\n'
+                 '04. Create mat, bar, feat using the appropriate method\n'
+                 '05. cl__.create_loom_file()\n'
+                 '06. Scrape internal author_annot metadata\n'
+                 '07. im__.set_cell_int_md_author_annot()\n'
+                 '08. im__.set_gene_int_md_author_annot()\n'
+                 '09. Construct universal metadata\n'
+                 '10. im__.set_cell_int_md_univ()\n'
+                 '11. ad__.add_external_metadata()'
                )
     print()
     print(workflow)
+
+def setup():
+    print('Add a New Dataset to the Single-Cell Database')
+    print('=============================================')
+    print('GEO Series ID:')
+    new_gse_id = input('> ')
+    set_new_entry(new_gse_id)
+    global _new_uuid
+    print(f'New UUID: {_new_uuid}')
+    print('\nDownloading files...')
+    download_files()
+    print('Done!')
+    print()
+    print('Remaining Steps')
+    print('---------------')
+    remaining_steps = ['Rename files appropriately',
+                       'Create mat, bar, feat using the appropriate method from create_loom',
+                       '>>> cl__.create_loom_file()',
+                       'Scrape internal author-annotated metadata',
+                       '>>> im__.set_cell_int_md_author_annot()',
+                       '>>> im__.set_gene_int_md_author_annot()',
+                       'Construct universal metadata',
+                       '>>> im__.set_cell_int_md_univ()',
+                       '>>> ad__.add_external_metadata()']
+    for i, step in enumerate(remaining_steps):
+        print(f'  {i:02d}. {step}')
+    print()
+
 def set_new_entry(new_gse_id):
     global _gse_id
     global _new_uuid
@@ -33,15 +67,6 @@ def download_files():
                                            GC._PATH_TO_DATABASE,
                                            log = False)
 
-def make_loom_data(prefix):
-    global _new_uuid
-    expr_matrix, barcodes, features = cl__.get_expr_matrix_from_cellranger(GC._PATH_TO_DATABASE + _new_uuid + '/',
-                                                                           prefix)
-    cl__.create_loom_file(GC._PATH_TO_DATABASE + _new_uuid + '/' + 'expr_mat.loom',
-                          expr_matrix,
-                          barcodes,
-                          features)
-                        
 def add_external_metadata():
     global _gse_id
     global _new_uuid
@@ -72,6 +97,8 @@ def add_external_metadata():
 
 def main():
     pass
+
+setup()
 
 if __name__ == '__main__':
     main()
