@@ -148,7 +148,7 @@ get_sce <- function(uuid,
                     assay_for_matrix = "counts",
                     counts_assay = NULL,
                     logcounts_assay = NULL) {
-    lfile <- get_h5_conn(uuid)
+    lfile <- get_h5_conn(uuid, warning = FALSE)
     layers <- names(lfile[["layers"]])
 
     # Assays
@@ -234,6 +234,9 @@ get_sce <- function(uuid,
     row_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[2],
                                   ncol = 0))
     for (i in seq_along(row_keys)) {
+        if (row_keys[i] == "author_annot") {
+            next
+        }
         k <- paste("row_attrs/", row_keys[i], sep = "")
         if (length(lfile[[k]]$dims) == 1) {
             row_data[row_keys[i]] <- lfile[[k]][ ]
@@ -266,6 +269,9 @@ get_sce <- function(uuid,
     col_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[1],
                                   ncol = 0))
     for (i in seq_along(col_keys)) {
+        if (col_keys[i] == "author_annot") {
+            next
+        }
         k <- paste("col_attrs/", col_keys[i], sep = "")
         if (length(lfile[[k]]$dims) == 1) {
             col_data[col_keys[i]] <- lfile[[k]][ ]
@@ -282,5 +288,195 @@ get_sce <- function(uuid,
         rowData = row_data,
         colData = col_data
     )
+    lfile$close_all()
     return(sce)
+}
+
+#' Get the cell universal metadata.
+#' 
+#' Get the cell universal metadata from a given dataset
+#' as a dataframe.
+#' 
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @param keep_missing Logical vector of length 1. If TRUE, the returned
+#'   dataframe will have all columns. If FALSE, columns where all values
+#'   == -1 or "-1" (indicating a missing column) will be dropped from
+#'   the returned dataframe.
+#' @return A dataframe holding all the data available from the cell
+#'   universal metadata.
+get_cell_univ <- function(uuid, keep_missing = TRUE) {
+    lfile <- get_h5_conn(uuid, warning = FALSE)
+    col_keys <- names(lfile[["col_attrs"]])
+    # Initializes with the number of rows in the matrix,
+    # even though the loom file stores the expression matrix
+    # as genes x cells, and the SingleCellExperiment stores
+    # cells as columns. This is because R stores data in 
+    # Column-major order, also known as "Fortran-style",
+    # but Python uses Row-major order, also known as "C-style".
+    # This means that R will read all n-D datasets (where n > 1)
+    # in a transposed orientation. Thus, although it should
+    # initialize with the number of cells, it uses the number
+    # of rows. This is to avoid having to run a transpose
+    # operation just to get a dimension more readably.
+    col_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[1],
+                                  ncol = 0))
+    for (i in seq_along(col_keys)) {
+        if (col_keys[i] == "author_annot") {
+            next
+        }
+        k <- paste("col_attrs/", col_keys[i], sep = "")
+        if (length(lfile[[k]]$dims) == 1) {
+            if (all(as.character(lfile[[k]][ ]) == "-1")) {
+                if (keep_missing) {
+                    col_data[col_keys[i]] <- lfile[[k]][ ]
+                }
+            } else {
+                col_data[col_keys[i]] <- lfile[[k]][ ]
+            }
+        }
+    }
+    rownames(col_data) <- lfile[["col_attrs/CellID"]][ ]
+    if (ncol(col_data) == 0) {
+        col_data <- NULL
+    }
+    lfile$close_all()
+    return(col_data)
+}
+
+#' Get the gene universal metadata.
+#' 
+#' Get the gene universal metadata from a given dataset
+#' as a dataframe.
+#' 
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @param keep_missing Logical vector of length 1. If TRUE, the returned
+#'   dataframe will have all columns. If FALSE, columns where all values
+#'   == -1 or "-1" (indicating a missing column) will be dropped from
+#'   the returned dataframe.
+#' @return A dataframe holding all the data available from the gene
+#'   universal metadata.
+get_gene_univ <- function(uuid, keep_missing = TRUE) {
+    lfile <- get_h5_conn(uuid, warning = FALSE)
+    row_keys <- names(lfile[["row_attrs"]])
+    # Initializes with the number of columns in the matrix,
+    # even though the loom file stores the expression matrix
+    # as genes x cells, and the SingleCellExperiment stores
+    # genes as rows. This is because R stores data in 
+    # Column-major order, also known as "Fortran-style",
+    # but Python uses Row-major order, also known as "C-style".
+    # This means that R will read all n-D datasets (where n > 1)
+    # in a transposed orientation. Thus, although it should
+    # initialize with the number of genes, it uses the number
+    # of columns. This is to avoid having to run a transpose
+    # operation just to get a dimension more readably.
+    row_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[2],
+                                  ncol = 0))
+    for (i in seq_along(row_keys)) {
+        if (col_keys[i] == "author_annot") {
+            next
+        }
+        k <- paste("row_attrs/", row_keys[i], sep = "")
+        if (length(lfile[[k]]$dims) == 1) {
+            if (all(as.character(lfile[[k]][ ]) == "-1")) {
+                if (keep_missing) {
+                    row_data[row_keys[i]] <- lfile[[k]][ ]
+                }
+            } else {
+                row_data[row_keys[i]] <- lfile[[k]][ ]
+            }
+        }
+    }
+    if ("Gene" %in% row_keys) {
+        rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
+    } else if ("Accession" %in% row_keys) {
+        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+    } else {
+        # Do Nothing
+    }
+    if (ncol(row_data) == 0) {
+        row_data <- NULL
+    }
+    lfile$close_all()
+    return(row_data)
+}
+#' Get the cell author-annotations.
+#' 
+#' Get the cell author-annotations from a given dataset
+#' as a dataframe.
+#' 
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @return A dataframe holding all the data available from the cell
+#'   author-annotations.
+get_cell_author_annot <- function(uuid) {
+    lfile <- get_h5_conn(uuid, warning = FALSE)
+    col_keys <- names(lfile[["col_attrs/author_annot"]])
+    # Initializes with the number of rows in the matrix,
+    # even though the loom file stores the expression matrix
+    # as genes x cells, and the SingleCellExperiment stores
+    # cells as columns. This is because R stores data in 
+    # Column-major order, also known as "Fortran-style",
+    # but Python uses Row-major order, also known as "C-style".
+    # This means that R will read all n-D datasets (where n > 1)
+    # in a transposed orientation. Thus, although it should
+    # initialize with the number of cells, it uses the number
+    # of rows. This is to avoid having to run a transpose
+    # operation just to get a dimension more readably.
+    col_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[1],
+                                  ncol = 0))
+    for (i in seq_along(col_keys)) {
+        k <- paste("col_attrs/author_annot/", col_keys[i], sep = "")
+        if (length(lfile[[k]]$dims) == 1) {
+            col_data[col_keys[i]] <- lfile[[k]][ ]
+        }
+    }
+    rownames(col_data) <- lfile[["col_attrs/CellID"]][ ]
+    if (ncol(col_data) == 0) {
+        col_data <- NULL
+    }
+    lfile$close_all()
+    return(col_data)
+}
+
+#' Get the gene author-annotations.
+#' 
+#' Get the gene author-annotations from a given dataset
+#' as a dataframe.
+#' 
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @return A dataframe holding all the data available from the gene
+#'   author-annotations.
+get_gene_author_annot <- function(uuid) {
+    lfile <- get_h5_conn(uuid, warning = FALSE)
+    row_keys <- names(lfile[["row_attrs/author_annot"]])
+    # Initializes with the number of columns in the matrix,
+    # even though the loom file stores the expression matrix
+    # as genes x cells, and the SingleCellExperiment stores
+    # genes as rows. This is because R stores data in 
+    # Column-major order, also known as "Fortran-style",
+    # but Python uses Row-major order, also known as "C-style".
+    # This means that R will read all n-D datasets (where n > 1)
+    # in a transposed orientation. Thus, although it should
+    # initialize with the number of genes, it uses the number
+    # of columns. This is to avoid having to run a transpose
+    # operation just to get a dimension more readably.
+    row_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[2],
+                                  ncol = 0))
+    for (i in seq_along(row_keys)) {
+        k <- paste("row_attrs/author_annot/", row_keys[i], sep = "")
+        if (length(lfile[[k]]$dims) == 1) {
+            row_data[row_keys[i]] <- lfile[[k]][ ]
+        }
+    }
+    if ("Gene" %in% row_keys) {
+        rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
+    } else if ("Accession" %in% row_keys) {
+        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+    } else {
+        # Do Nothing
+    }
+    if (ncol(row_data) == 0) {
+        row_data <- NULL
+    }
+    lfile$close_all()
+    return(row_data)
 }
