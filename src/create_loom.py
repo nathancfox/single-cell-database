@@ -5,11 +5,18 @@ import loompy as lp
 import numpy as np
 import pandas as pd
 import scipy
+import h5py as h5
 import general_utils as gu__
+import global_constants as GC
 
 def create_loom_file(file_path, expr_matrix, barcodes, features,
                      feat_acc = True):
     """Creates a loom file.
+
+    Creates a loom file from a passed expression matrix, list
+    of cell barcodes, and list of genes. Also adds the fields
+    for the cell-specific universal internal metadata, and
+    the HDF5 groups for the author-annotated internal metadata.
 
     Args:
         file_path: String. A full path, including the file
@@ -49,6 +56,20 @@ def create_loom_file(file_path, expr_matrix, barcodes, features,
     except MemoryError:
         print('\nERROR: Dataset too large to create a loom file!\n')
         sys.exit(1)
+    lfile = h5.File(file_path, "r+")
+    # Add edits to the loom file specification
+    lfile.create_group("col_attrs/author_annot")
+    lfile.create_group("row_attrs/author_annot")
+    # I'm not sure if I want to keep this. This pre-creates the
+    # universal internal metadata fields as empty HDF5 datasets.
+    # 
+    # n_col = lfile['matrix'].shape[1]
+    # # Universal Internal Metadata fields in correct order
+    # univ_fields = [item[0] for item in sorted(GC._IMU_COLUMN_INDEX.items(),
+    #                                           key = lambda x: x[1])]
+    # for field in univ_fields:
+    #     lfile.create_dataset(f'col_attrs/{field}', shape = (n_col, ))
+    lfile.close()
 
 
 def get_expr_matrix_from_cellranger(path, prefix):
