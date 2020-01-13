@@ -8,10 +8,10 @@ The external metadata file is a text, tab-separated-value file
 located at the global constant: _PATH_TO_METADATA.
 
 Column details can be seen in the global constant 
-dictionary: _COLUMN_DESCRIPTIONS
+dictionary: _EM_COLUMN_DESCRIPTIONS
 
 Mandatory columns are indicated in the global
-constant dictionary: _COLUMN_MANDATORY
+constant dictionary: _EM_COLUMN_MANDATORY
 
 Column names in the actual file should be all lowercase, all
 alphanumeric, and with spaces replaced with underscores.
@@ -21,7 +21,9 @@ sys.path.append('/home/nfox/projects/single_cell_database/src')
 import pandas as pd
 import os
 import re
+import pprint
 import global_constants as GC
+import general_utils as gu__
 
 def append_row(new_row):
     """Append a new entry to the external metadata database.
@@ -29,7 +31,7 @@ def append_row(new_row):
     Args:
         new_row: list holding all the entries of the new row
             for the external metadata file. Missing data
-            should be included as a ''.
+            should be included as a '-1'.
     
     Returns: None
 
@@ -40,8 +42,8 @@ def append_row(new_row):
     n_columns = get_shape()[1]
     if len(new_row) != n_columns:
         raise AssertionError(f'new_row must have length {n_columns}!')
-    for k, v in GC._COLUMN_INDEX.items():
-        if (GC._COLUMN_MANDATORY[k]) and (new_row[v] == ''):
+    for k, v in GC._EM_COLUMN_INDEX.items():
+        if (GC._EM_COLUMN_MANDATORY[k]) and (new_row[v] == ''):
             raise ValueError('Mandatory column is missing!')
     with open(GC._PATH_TO_METADATA, 'a') as f:
         # Temporarily removed because I think it's introducing a bug.
@@ -83,12 +85,18 @@ def get_new_row_input(pre_fill = None):
                    'If you do not have the information, simply press\n'
                    'Enter without typing anything. If the column is mandatory,\n'
                    'indicated with an *, the system will not accept an empty value.\n'
+                   'If a dataset has a characteristic that does not match the\n'
+                   'given schema, or if the dataset has multiple values for a\n'
+                   'column where multiple values are not allowed, enter \"OTHER\".\n'
                    '\n'
                    'To execute one of the following options, enter\n'
                    'the command in any of the prompts.\n'
                    '    QUIT    : Abort this new entry\n'
-                   '    RESTART : Start over\n'
+                   '    RESTART : Start this new entry over\n'
                    '    DESC    : Get a column description\n'
+                   '    LIST    : Get a list of possible values. Note that\n'
+                   '              not all columns have this option. Those that\n'
+                   '              do, have it mentioned in DESC.\n'
                  )
     print(intro_text)
     input('Press Enter to continue...')
@@ -98,9 +106,9 @@ def get_new_row_input(pre_fill = None):
     col_idx = 0
     new_vals = ['FILL_ME_IN' for i in range(len(colnames))]
     while loop:
-        column_name = GC._COLUMN_DESCRIPTIONS[colnames[col_idx]]
+        column_name = GC._EM_COLUMN_DESCRIPTIONS[colnames[col_idx]]
         column_name = column_name.split('\n')[0][4:]
-        if GC._COLUMN_MANDATORY[colnames[col_idx]]:
+        if GC._EM_COLUMN_MANDATORY[colnames[col_idx]]:
             print(f'Column {col_idx + 1:02d}: {column_name}*')
         else:
             print(f'Column {col_idx + 1:02d}: {column_name}')
@@ -129,11 +137,43 @@ def get_new_row_input(pre_fill = None):
             continue
         elif user_input == 'DESC':
             print()
-            print(GC._COLUMN_DESCRIPTIONS[colnames[col_idx]])
+            print(GC._EM_COLUMN_DESCRIPTIONS[colnames[col_idx]])
             print()
             print()
             continue
-        elif GC._COLUMN_MANDATORY[colnames[col_idx]] and (user_input) == '':
+        elif user_input == 'LIST':
+            if col_idx == 1:
+                # tissue
+                print()
+                for k, v in GC._TISSUE_LIST.items():
+                    print(f'{k}')
+                    print('-' * (len(k)))
+                    print(gu__.print_list(v, width = 50, idt = '  '))
+                    print()
+            elif col_idx == 5:
+                # count_format
+                values = ['raw', 'cpm', 'tpm', 'rpkm', 'fpkm']
+                print()
+                print('Possible Values')
+                print('---------------')
+                print(gu__.print_list(values, width = 50, idt = '  '))
+                print()
+            elif col_idx == 8:
+                # technology
+                df = get_as_dataframe()
+                values = list(df['technology'].unique())
+                values.sort()
+                print()
+                print('Technologies in Database')
+                print('------------------------')
+                print(gu__.print_list(values, width = 50, idt = '  '))
+                print()
+            else:
+                print()
+                print('ERROR: This column does not have a \"LIST\" option.')
+                print()
+            continue
+        elif GC._EM_COLUMN_MANDATORY[colnames[col_idx]] and (user_input) == '':
             if pre_fill is not None:
                 if colnames[col_idx] in pre_fill.keys():
                     raise ValueError(f'{colnames[col_idx]} is mandatory! '
@@ -145,6 +185,8 @@ def get_new_row_input(pre_fill = None):
                 print()
             continue
         else:
+            if user_input == '':
+                user_input = '-1'
             new_vals[col_idx] = user_input
             col_idx += 1
             if col_idx >= len(colnames):
@@ -158,8 +200,8 @@ def write_header():
     """Write header of new external metadata file."""
     if os.path.exists(GC._PATH_TO_METADATA):
         raise AssertionError(f'{GC._PATH_TO_METADATA} already exists!')
-    indices = pd.DataFrame({'keys': list(GC._COLUMN_INDEX.keys()),
-                            'values': list(GC._COLUMN_INDEX.values())})
+    indices = pd.DataFrame({'keys': list(GC._EM_COLUMN_INDEX.keys()),
+                            'values': list(GC._EM_COLUMN_INDEX.values())})
     indices = indices.sort_values(by = 'values')
     columns = indices['keys']
     with open(GC._PATH_TO_METADATA, 'w') as f:
@@ -208,7 +250,7 @@ def get_column_names():
     header = list(header.iloc[0])
     return(header)
 
-def uuid_to_col(uuid_key, columns = None):
+def uuid_to_row(uuid_key, columns = None):
     """Get values of a row, indexed by UUID.
 
     Given a certain UUID, retrieves that row from
@@ -266,21 +308,21 @@ def verify_global_constants():
     The following assertions are checked:
         * _PATH_TO_METADATA points to an existing regular file
         * _PATH_TO_METADATA will open successfully
-        * _COLUMN_DESCRIPTIONS, _COLUMN_INDEX, and _COLUMN_MANDATORY
+        * _EM_COLUMN_DESCRIPTIONS, _EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY
           all have the same length
-        * _COLUMN_DESCRIPTIONS, _COLUMN_INDEX, and _COLUMN_MANDATORY
+        * _EM_COLUMN_DESCRIPTIONS, _EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY
           all have the same keys
         * _PATH_TO_METADATA is not an empty file
         * The header of _PATH_TO_METADATA has the same number of
-          columns as keys in _COLUMN_DESCRIPTIONS
+          columns as keys in _EM_COLUMN_DESCRIPTIONS
         * The header of _PATH_TO_METADATA has the same columns
-          as keys in _COLUMN_DESCRIPTIONS
+          as keys in _EM_COLUMN_DESCRIPTIONS
         * The header of _PATH_TO_METADATA is in the same order
-          as the values in _COLUMN_INDEX
-        * The column numbers in the values of _COLUMN_DESCRIPTIONS
-          match the values in _COLUMN_INDEX
-        * The column titles in the values of _COLUMN_DESCRIPTIONS
-          match the keys of _COLUMN_DESCRIPTIONS
+          as the values in _EM_COLUMN_INDEX
+        * The column numbers in the values of _EM_COLUMN_DESCRIPTIONS
+          match the values in _EM_COLUMN_INDEX
+        * The column titles in the values of _EM_COLUMN_DESCRIPTIONS
+          match the keys of _EM_COLUMN_DESCRIPTIONS
     """
     if not os.path.exists(GC._PATH_TO_METADATA):
         raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA does not exist!')
@@ -288,31 +330,31 @@ def verify_global_constants():
         raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA is not a '
                              'regular file!')
 
-    if len(GC._COLUMN_DESCRIPTIONS) != len(GC._COLUMN_INDEX):
-        raise AssertionError('GLOBAL VAR ERROR: _COLUMN_DESCRIPTIONS and '
-                             '_COLUMN_INDEX are different lengths!')
-    if len(GC._COLUMN_DESCRIPTIONS) != len(GC._COLUMN_MANDATORY):
-        raise AssertionError('GLOBAL VAR ERROR: _COLUMN_DESCRIPTIONS and '
-                             '_COLUMN_MANDATORY are different lengths!')
-    if len(GC._COLUMN_INDEX) != len(GC._COLUMN_MANDATORY):
-        raise AssertionError('GLOBAL VAR ERROR: _COLUMN_INDEX and '
-                             '_COLUMN_MANDATORY are different lengths!')
-    desc_keys = list(GC._COLUMN_DESCRIPTIONS.keys())
+    if len(GC._EM_COLUMN_DESCRIPTIONS) != len(GC._EM_COLUMN_INDEX):
+        raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_DESCRIPTIONS and '
+                             '_EM_COLUMN_INDEX are different lengths!')
+    if len(GC._EM_COLUMN_DESCRIPTIONS) != len(GC._EM_COLUMN_MANDATORY):
+        raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_DESCRIPTIONS and '
+                             '_EM_COLUMN_MANDATORY are different lengths!')
+    if len(GC._EM_COLUMN_INDEX) != len(GC._EM_COLUMN_MANDATORY):
+        raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_INDEX and '
+                             '_EM_COLUMN_MANDATORY are different lengths!')
+    desc_keys = list(GC._EM_COLUMN_DESCRIPTIONS.keys())
     desc_keys.sort()
-    indx_keys = list(GC._COLUMN_INDEX.keys())
+    indx_keys = list(GC._EM_COLUMN_INDEX.keys())
     indx_keys.sort()
-    mand_keys = list(GC._COLUMN_MANDATORY.keys())
+    mand_keys = list(GC._EM_COLUMN_MANDATORY.keys())
     mand_keys.sort()
     for i in range(len(desc_keys)):
         if desc_keys[i] != indx_keys[i]:
-            raise AssertionError('GLOBAL VAR ERROR: _COLUMN_DESCRIPTIONS and '
-                                '_COLUMN_INDEX have different keys!')
+            raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_DESCRIPTIONS and '
+                                '_EM_COLUMN_INDEX have different keys!')
         if desc_keys[i] != mand_keys[i]:
-            raise AssertionError('GLOBAL VAR ERROR: _COLUMN_DESCRIPTIONS and '
-                                '_COLUMN_MANDATORY have different keys!')
+            raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_DESCRIPTIONS and '
+                                '_EM_COLUMN_MANDATORY have different keys!')
         if indx_keys[i] != mand_keys[i]:
-            raise AssertionError('GLOBAL VAR ERROR: _COLUMN_INDEX and '
-                                '_COLUMN_MANDATORY have different keys!')
+            raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_INDEX and '
+                                '_EM_COLUMN_MANDATORY have different keys!')
 
     try:
         f = open(GC._PATH_TO_METADATA, 'r')
@@ -325,36 +367,36 @@ def verify_global_constants():
         raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA is an empty file!') 
     header = header.strip().split(sep = '\t')
     if len(header) != len(desc_keys):
-        raise AssertionError('GLOBAL VAR ERROR: _COLUMN_DESCRIPTIONS, '
-                             '_COLUMN_INDEX, and _COLUMN_MANDATORY '
+        raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_DESCRIPTIONS, '
+                             '_EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY '
                              'have a different length than the header '
-                             'at _PATH_TO_VAR!')
+                             'at _PATH_TO_METADATA!')
     for k in header:
         if k not in desc_keys:
             raise AssertionError('GLOBAL VAR ERROR: The header at '
-                                 '_PATH_TO_VAR does not match the '
-                                 'keys of _COLUMN_DESCRIPTIONS, '
-                                 '_COLUMN_INDEX, and _COLUMN_MANDATORY!')
-    for k, v in GC._COLUMN_INDEX.items():
+                                 '_PATH_TO_METADATA does not match the '
+                                 'keys of _EM_COLUMN_DESCRIPTIONS, '
+                                 '_EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY!')
+    for k, v in GC._EM_COLUMN_INDEX.items():
         if k != header[v]:
             raise AssertionError('GLOBAL VAR ERROR: The values of '
-                                 '_COLUMN_INDEX do not match the '
+                                 '_EM_COLUMN_INDEX do not match the '
                                  'order of values in the header '
-                                 'at _PATH_TO_VAR!')
-        col_desc_index = int(GC._COLUMN_DESCRIPTIONS[k][:2]) - 1
+                                 'at _PATH_TO_METADATA!')
+        col_desc_index = int(GC._EM_COLUMN_DESCRIPTIONS[k][:2]) - 1
         if col_desc_index != v:
             raise AssertionError('GLOBAL VAR ERROR: The column numbers '
-                                 'in the values of _COLUMN_DESCRIPTIONS '
-                                 'do not match the values of _COLUMN_INDEX!')
-    for k, v in GC._COLUMN_DESCRIPTIONS.items():
+                                 'in the values of _EM_COLUMN_DESCRIPTIONS '
+                                 'do not match the values of _EM_COLUMN_INDEX!')
+    for k, v in GC._EM_COLUMN_DESCRIPTIONS.items():
         desc_col = v.split('\n')[0][4:].lower()
         desc_col = re.sub(r'[^a-z0-9_ ]', r'', desc_col)
         desc_col = re.sub(r' ', r'_', desc_col)
         if k != desc_col:
             raise AssertionError('GLOBAL VAR ERROR: The column titles '
-                                 'in the values of _COLUMN_DESCRIPTIONS '
+                                 'in the values of _EM_COLUMN_DESCRIPTIONS '
                                  'do not match the keys of '
-                                 '_COLUMN_DESCRIPTIONS! Note that the '
+                                 '_EM_COLUMN_DESCRIPTIONS! Note that the '
                                  'column titles are parsed to match '
                                  'the keys, so an imperfect parsing engine '
                                  'may be the problem.')
