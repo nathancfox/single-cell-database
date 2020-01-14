@@ -44,7 +44,7 @@ def get_h5_conn(uuid, write = False):
     for the associated loom file.
 
     Args:
-        uuid: Strong. UUID of the desired dataset
+        uuid: String. UUID of the desired dataset
         write: Boolean. If True, the File object
             will have write access. Note that this
             is a temporary feature during development
@@ -198,6 +198,74 @@ def get_gene_author_annot(uuid):
 def get_extern_md():
     """Gets external metadata as pandas DataFrame."""
     return(em__.get_as_dataframe())
+
+def uuid_to_row(uuid, columns = None):
+    """Get values of a row, indexed by UUID.
+
+    This is just a wrapper around
+    external_metadata.uuid_to_row()
+
+    Given a certain UUID, retrieves that row from
+    the external metadata and returns the requested
+    columns as a pandas Series. If columns is None,
+    the entire row is returned. If columns is a list
+    of column names, the values are returned in that
+    order. Invalid columns do not raise an Exception,
+    however, a warning is generated and all values
+    for those columns will be 'NOT_A_VALID_COLUMN'.
+
+    Args:
+        uuid_key: String. UUID used to look up the
+            row requested. Must be in the 32 hexadecimal
+            digits format created by str(uuid), where
+            uuid is a python uuid.UUID class.
+            e.g. "12345678-1234-5678-1234-567812345678"
+        columns: list of strings. Each string should be
+            a column from the external metadata file
+            to include in the returned values. If None,
+            the entire row will be returned.
+    
+    Returns:
+        pandas Series containing the values requested
+        that correspond to the uuid_key. Index should
+        be the columns variable, if passed. Otherwise,
+        will be the columns of the dataframe.
+
+    Raises:
+        IndexError: if the uuid_key is not a valid lookup.
+    """
+    return(em__.uuid_to_row(uuid, columns))
+
+def get_cell_ids(uuid):
+    lfile = get_h5_conn(uuid)
+    cell_ids = np.array(lfile['col_attrs/CellID'])
+    lfile.close()
+    return(cell_ids)
+
+def get_gene_ids(uuid, accession = False):
+    lfile = get_h5_conn(uuid)
+    if accession:
+        if 'Accession' in lfile['row_attrs'].keys():
+            gene_ids = np.array(lfile['row_attrs/Accession']) 
+        elif 'Gene' in lfile['row_attrs'].keys():
+            print('Warning! Accession not available. Returning \"Gene\" '
+                  'instead.')
+            gene_ids = np.array(lfile['row_attrs/Gene']) 
+        else:
+            raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
+                                 f'an \"Accession\" row attribute!')
+    else:
+        if 'Gene' in lfile['row_attrs'].keys():
+            gene_ids = np.array(lfile['row_attrs/Gene']) 
+        elif 'Accession' in lfile['row_attrs'].keys():
+            print('Warning! Gene not available. Returning \"Accession\" '
+                  'instead.')
+            gene_ids = np.array(lfile['row_attrs/Accession']) 
+        else:
+            raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
+                                 f'an \"Accession\" row attribute!')
+    lfile.close()
+    return(gene_ids)
 
 def main():
     pass
