@@ -79,7 +79,7 @@ def get_new_row_input(pre_fill = None):
     intro_text = (
                    '\n'
                    'New Entry to External Metadata\n'
-                   '------------------------------'
+                   '------------------------------\n'
                    '\n'
                    'For each column, enter your value, then press Enter.\n'
                    'If you do not have the information, simply press\n'

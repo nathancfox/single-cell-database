@@ -98,8 +98,6 @@ def add_external_metadata():
 def main():
     pass
 
-setup()
-
 if __name__ == '__main__':
     main()
     
