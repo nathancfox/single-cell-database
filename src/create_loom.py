@@ -57,9 +57,14 @@ def create_loom_file(file_path, expr_matrix, barcodes, features,
         print('\nERROR: Dataset too large to create a loom file!\n')
         sys.exit(1)
     lfile = h5.File(file_path, "r+")
+
     # Add edits to the loom file specification
-    lfile.create_group("col_attrs/author_annot")
-    lfile.create_group("row_attrs/author_annot")
+    # FLAG
+    # lfile.create_group("col_attrs/author_annot")
+    # lfile.create_group("row_attrs/author_annot")
+    lfile.create_group("cell_author_annot")
+    lfile.create_group("gene_author_annot")
+
     # I'm not sure if I want to keep this. This pre-creates the
     # universal internal metadata fields as empty HDF5 datasets.
     # 

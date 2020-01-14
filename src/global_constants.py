@@ -171,7 +171,7 @@ _EM_COLUMN_MANDATORY = {
     'internal'       : True
 }
 
-_IMU_COL_COLUMN_DESCRIPTIONS = {
+_IMU_CELL_COLUMN_DESCRIPTIONS = {
     'cluster':
         (
             '01. Cluster\n'
@@ -180,9 +180,7 @@ _IMU_COL_COLUMN_DESCRIPTIONS = {
             '    is a gray area and is up for debate.\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
-            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
-            '    This is a mapping from non-negative integers to descriptions\n'
-            '    in the HDF5 attribute \"desc\".'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"'
         ),
     'species':
         (
@@ -215,9 +213,7 @@ _IMU_COL_COLUMN_DESCRIPTIONS = {
             '    integers to descriptions in the HDF5 attribute \"desc\".\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
-            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
-            '    This is a mapping from non-negative integers to descriptions\n'
-            '    in the HDF5 attribute \"desc\".'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"'
         ),
     'sex':
         (
@@ -237,9 +233,7 @@ _IMU_COL_COLUMN_DESCRIPTIONS = {
             '    combinations.\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
-            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
-            '    This is a mapping from non-negative integers to descriptions\n'
-            '    in the HDF5 attribute \"desc\".'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"'
         ),
     'condition':
         (
@@ -248,9 +242,7 @@ _IMU_COL_COLUMN_DESCRIPTIONS = {
             '    healthy, untreated cells, this value should be \"0\".\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
-            '    is not missing, but is invalid, it is designated with \"OTHER\"\n'
-            '    This is a mapping from non-negative integers to descriptions\n'
-            '    in the HDF5 attribute \"desc\".'
+            '    is not missing, but is invalid, it is designated with \"OTHER\"'
         ),
     'uuid':
         (
@@ -262,7 +254,7 @@ _IMU_COL_COLUMN_DESCRIPTIONS = {
         )
 }
 
-_IMU_COL_COLUMN_INDEX = {
+_IMU_CELL_COLUMN_INDEX = {
     'cluster'        : 0,
     'species'        : 1,
     'tissue'         : 2,
@@ -273,7 +265,7 @@ _IMU_COL_COLUMN_INDEX = {
     'uuid'           : 7
 }
 
-_IMU_COL_COLUMN_MANDATORY = {
+_IMU_CELL_COLUMN_MANDATORY = {
     'cluster'        : False,
     'species'        : False,
     'tissue'         : False,
@@ -284,9 +276,9 @@ _IMU_COL_COLUMN_MANDATORY = {
     'uuid'           : True
 }
 
-_IMU_ROW_COLUMN_DESCRIPTIONS = {}
-_IMU_ROW_COLUMN_INDEX = {}
-_IMU_ROW_COLUMN_MANDATORY = {}
+_IMU_GENE_COLUMN_DESCRIPTIONS = {}
+_IMU_GENE_COLUMN_INDEX = {}
+_IMU_GENE_COLUMN_MANDATORY = {}
 
 _TISSUE_LIST = {
     'Nervous':

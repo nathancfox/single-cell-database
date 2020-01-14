@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import external_metadata as em__
 import internal_metadata as im__
+import global_constants as GC
 
 def get_loom_filename(uuid):
     """Get loom filename for dataset entry.
@@ -107,6 +108,12 @@ def get_anndata(uuid, **kwargs):
             pass
     lfile.close()
     adata = sc.read_loom(get_loom_filename(uuid), **kwargs)
+    adata.obs = adata.obs[sorted(adata.obs.columns,
+                                 key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])]
+    adata.var = adata.var[sorted(adata.var.columns,
+                                 key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])]
+    adata.uns['cell_author_annot'] = get_cell_author_annot(uuid)
+    adata.uns['gene_author_annot'] = get_gene_author_annot(uuid)
     return(adata)
 
 def get_cell_univ(uuid, keep_missing = True):
@@ -248,7 +255,7 @@ def get_gene_ids(uuid, accession = False):
         if 'Accession' in lfile['row_attrs'].keys():
             gene_ids = np.array(lfile['row_attrs/Accession']) 
         elif 'Gene' in lfile['row_attrs'].keys():
-            print('Warning! Accession not available. Returning \"Gene\" '
+            print('Warning! "Accession" not available. Returning \"Gene\" '
                   'instead.')
             gene_ids = np.array(lfile['row_attrs/Gene']) 
         else:
@@ -258,7 +265,7 @@ def get_gene_ids(uuid, accession = False):
         if 'Gene' in lfile['row_attrs'].keys():
             gene_ids = np.array(lfile['row_attrs/Gene']) 
         elif 'Accession' in lfile['row_attrs'].keys():
-            print('Warning! Gene not available. Returning \"Accession\" '
+            print('Warning! "Gene" not available. Returning \"Accession\" '
                   'instead.')
             gene_ids = np.array(lfile['row_attrs/Accession']) 
         else:

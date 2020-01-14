@@ -114,8 +114,11 @@ def construct_batch(df, columns):
             form the 'batch' column.
 
     Returns:
-        A Pandas Series object containing the new 'batch'
-        column for the cell internal universal metadata.
+        A tuple with 2 members:
+          1. A Pandas Series object containing the new 'batch'
+             column for the cell internal universal metadata.
+          2. A single string with the column names concatenated
+             to describe the new batch column values.
 
     Raises: None
     """
@@ -124,7 +127,7 @@ def construct_batch(df, columns):
     for i in range(df.shape[0]):
         out.append('|'.join(df.iloc[i].apply(str)))
     out = pd.Series(out)
-    return(out)
+    return((out, '|'.join(columns)))
 
 # These methods were built to support a MAPPING schema
 # originally described in blog post "Nathan: Jan 6 - Jan 10"
@@ -379,9 +382,14 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
             If False, they are dropped from the returned DataFrame.
     
     Returns:
-        Pandas DataFrame with the same number of rows as cells
-        in the dataset and where each column is a universal
-        internal metadata field.
+        If there is a "batch_key" attribute for the batch column
+        and the batch column isn't a missing column, then a
+        2-member tuple is returned:
+          1. Pandas DataFrame with the same number of rows as cells
+             in the dataset and where each column is a universal
+             internal metadata field.
+          2. String. The batch_key.
+        If not, just the Pandas DataFrame is returned, not in a tuple.
 
     Raises: None
     """
@@ -389,19 +397,33 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
     col_keys = list(lfile['col_attrs'].keys())
     col_data = pd.DataFrame(index = np.array(lfile['col_attrs/CellID']))
     for key in col_keys:
-        if key == 'author_annot':
+        # FLAG
+        # if key == 'author_annot' or key == 'CellID':
+        if key == 'CellID':
             continue
         key_path = 'col_attrs/' + key
         if len(lfile[key_path].shape) == 1:
-            if (np.array(lfile[key_path], dtype = '<U1') == '-1').all():
+            if (np.array(list(map(str, list(lfile[key_path])))) == '-1').all():
                 if keep_missing:
                     col_data[key] = lfile[key_path][:]
             else:
                 col_data[key] = lfile[key_path][:]
     if col_data.shape[1] == 0:
         col_data = None
-    lfile.close()
-    return(col_data)
+        return(col_data)
+    else:
+        column_order = sorted(col_data.columns,
+                            key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
+        col_data = col_data[column_order]
+        batch_key = None
+        if ('batch' in col_data.columns
+            and 'batch_key' in lfile['col_attrs/batch'].attrs.keys()):
+            batch_key = lfile['col_attrs/batch'].attrs['batch_key']
+        lfile.close()
+        if batch_key is not None:
+            return((col_data, batch_key))
+        else:
+            return(col_data)
 
 def get_gene_int_md_univ(uuid, keep_missing = True):
     """Get the gene universal metadata.
@@ -426,22 +448,34 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
     row_keys = list(lfile['row_attrs'].keys())
     if 'Gene' in row_keys:
         row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
+        skip_col = 'Gene'
     elif 'Accession' in row_keys:
         row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
+        skip_col = 'Accession'
     else:
         row_data = pd.DataFrame()
     for key in row_keys:
-        if key == 'author_annot':
+        # FLAG
+        # if key == 'author_annot' or key == skip_col:
+        if key == skip_col:
             continue
         key_path = 'row_attrs/' + key
         if len(lfile[key_path].shape) == 1:
-            if (np.array(lfile[key_path], dtype = '<U1') == '-1').all():
+            if (np.array(list(map(str, list(lfile[key_path])))) == '-1').all():
                 if keep_missing:
                     row_data[key] = lfile[key_path][:]
             else:
                 row_data[key] = lfile[key_path][:]
     if row_data.shape[1] == 0:
         row_data = None
+    else:
+        column_order = sorted(row_data.columns,
+                              key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
+        if skip_col == 'Gene' and 'Accession' in row_keys:
+            column_order = ['Accession'] + column_order
+        elif skip_col == 'Accession' and 'Gene' in row_keys:
+            column_order = ['Gene'] + column_order
+        row_data = row_data[column_order]
     lfile.close()
     return(row_data)
 
@@ -462,14 +496,23 @@ def get_cell_int_md_author_annot(uuid):
     Raises: None
     """
     lfile = ac__.get_h5_conn(uuid)
-    col_keys = list(lfile['col_attrs/author_annot'].keys())
+    # FLAG
+    # col_keys = list(lfile['col_attrs/author_annot'].keys())
+    col_keys = list(lfile['cell_author_annot'].keys())
     col_data = pd.DataFrame(index = np.array(lfile['col_attrs/CellID']))
     for key in col_keys:
-        key_path = 'col_attrs/author_annot/' + key
+        # FLAG
+        # key_path = 'col_attrs/author_annot/' + key
+        key_path = 'cell_author_annot/' + key
         if len(lfile[key_path].shape) == 1:
             col_data[key] = lfile[key_path][:]
     if col_data.shape[1] == 0:
         col_data = None
+    else:
+        # FLAG
+        # col_order = lfile['col_attrs/author_annot'].attrs['column_order'].split('|')
+        col_order = lfile['cell_author_annot'].attrs['column_order'].split('|')
+        col_data = col_data[col_order]
     lfile.close()
     return(col_data)
 
@@ -490,7 +533,9 @@ def get_gene_int_md_author_annot(uuid):
     Raises: None
     """
     lfile = ac__.get_h5_conn(uuid)
-    row_keys = list(lfile['row_attrs/author_annot'].keys())
+    # FLAG
+    # row_keys = list(lfile['row_attrs/author_annot'].keys())
+    row_keys = list(lfile['gene_author_annot'].keys())
     if 'Gene' in row_keys:
         row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
     elif 'Accession' in row_keys:
@@ -498,11 +543,18 @@ def get_gene_int_md_author_annot(uuid):
     else:
         row_data = pd.DataFrame()
     for key in row_keys:
-        key_path = 'row_attrs/author_annot/' + key
+        # FLAG
+        # key_path = 'row_attrs/author_annot/' + key
+        key_path = 'gene_author_annot/' + key
         if len(lfile[key_path].shape) == 1:
             row_data[key] = lfile[key_path][:]
     if row_data.shape[1] == 0:
         row_data = None
+    else:
+        # FLAG
+        # col_order = lfile['row_attrs/author_annot'].attrs['column_order'].split('|')
+        col_order = lfile['gene_author_annot'].attrs['column_order'].split('|')
+        row_data = row_data[col_order]
     lfile.close()
     return(row_data)
 
@@ -540,23 +592,36 @@ def set_cell_int_md_author_annot(uuid, df):
     columns_written = {} 
     for col in df.columns:
         try:
-            if col in lfile['col_attrs/author_annot'].keys():
-                skip_col = input(f'Column \"{col}\" already exists!\n'
-                                'Overwrite? (y/n): ')[0].lower()
-                if skip_col == 'n':
+            # FLAG
+            # if col in lfile['col_attrs/author_annot'].keys():
+            if col in lfile['cell_author_annot'].keys():
+                overwrite_col = input(f'Column \"{col}\" already exists!\n'
+                                       'Overwrite? (y/n): ')[0].lower()
+                if overwrite_col == 'n':
                     continue
                 else:
-                    columns_written[col] = pd.Series(lfile[f'col_attrs/author_annot/{col}'])
-                    del lfile[f'col_attrs/author_annot/{col}']
+                    # FLAG
+                    # columns_written[col] = pd.Series(lfile[f'col_attrs/author_annot/{col}'])
+                    columns_written[col] = pd.Series(lfile[f'cell_author_annot/{col}'])
+                    # FLAG
+                    # del lfile[f'col_attrs/author_annot/{col}']
+                    del lfile[f'cell_author_annot/{col}']
             if df[col].dtype == object:
-                dset = lfile.create_dataset(f'col_attrs/author_annot/{col}',
+                # FLAG
+                # dset = lfile.create_dataset(f'col_attrs/author_annot/{col}',
+                #                             (lfile['matrix'].shape[1], ),
+                #                             dtype = h5.string_dtype())
+                dset = lfile.create_dataset(f'cell_author_annot/{col}',
                                             (lfile['matrix'].shape[1], ),
                                             dtype = h5.string_dtype())
-                dset[:] = df[col]
                 if col not in columns_written.keys():
                     columns_written[col] = None
+                dset[:] = df[col]
             else:
-                dset = lfile.create_dataset(f'col_attrs/author_annot/{col}',
+                # FLAG
+                # dset = lfile.create_dataset(f'col_attrs/author_annot/{col}',
+                #                             data = df[col])
+                dset = lfile.create_dataset(f'cell_author_annot/{col}',
                                             data = df[col])
                 if col not in columns_written.keys():
                     columns_written[col] = None
@@ -564,11 +629,19 @@ def set_cell_int_md_author_annot(uuid, df):
             col_warnings = set() 
             for col_del in columns_written:
                 if columns_written[col_del] is None:
-                    del lfile[f'col_attrs/author_annot/{col_del}']
+                    # FLAG
+                    # del lfile[f'col_attrs/author_annot/{col_del}']
+                    del lfile[f'cell_author_annot/{col_del}']
                 elif type(columns_written[col_del]) == pd.core.series.Series:
-                    if col_del in lfile['col_attrs/author_annot'].keys():
-                        del lfile[f'col_attrs/author_annot/{col_del}']
-                    dset = lfile.create_dataset(f'col_attrs/author_annot/{col_del}',
+                    # FLAG
+                    # if col_del in lfile['col_attrs/author_annot'].keys():
+                    #     del lfile[f'col_attrs/author_annot/{col_del}']
+                    # dset = lfile.create_dataset(f'col_attrs/author_annot/{col_del}',
+                    #                             (lfile['matrix'].shape[1], ),
+                    #                             dtype = h5.string_dtype())
+                    if col_del in lfile['cell_author_annot'].keys():
+                        del lfile[f'cell_author_annot/{col_del}']
+                    dset = lfile.create_dataset(f'cell_author_annot/{col_del}',
                                                 (lfile['matrix'].shape[1], ),
                                                 dtype = h5.string_dtype())
                     dset[:] = columns_written[col_del]
@@ -582,6 +655,9 @@ def set_cell_int_md_author_annot(uuid, df):
                                 'columns may have been converted to '
                                 'strings:\n'
                                 '    ' + '\n    '.join(col_warnings))
+    # FLAG
+    # lfile['col_attrs/author_annot'].attrs['column_order'] = '|'.join(df.columns)
+    lfile['cell_author_annot'].attrs['column_order'] = '|'.join(df.columns)
     lfile.close()
 
 def set_gene_int_md_author_annot(uuid, df):
@@ -618,23 +694,36 @@ def set_gene_int_md_author_annot(uuid, df):
     columns_written = {} 
     for col in df.columns:
         try:
-            if col in lfile['row_attrs/author_annot'].keys():
-                skip_col = input(f'Column \"{col}\" already exists!\n'
-                                'Overwrite? (y/n): ')[0].lower()
-                if skip_col == 'n':
+            # FLAG
+            # if col in lfile['row_attrs/author_annot'].keys():
+            if col in lfile['gene_author_annot'].keys():
+                overwrite_col = input(f'Column \"{col}\" already exists!\n'
+                                       'Overwrite? (y/n): ')[0].lower()
+                if overwrite_col == 'n':
                     continue
                 else:
-                    columns_written[col] = pd.Series(lfile[f'row_attrs/author_annot/{col}'])
-                    del lfile[f'col_attrs/author_annot/{col}']
+                    # FLAG
+                    # columns_written[col] = pd.Series(lfile[f'row_attrs/author_annot/{col}'])
+                    columns_written[col] = pd.Series(lfile[f'gene_author_annot/{col}'])
+                    # FLAG
+                    # del lfile[f'col_attrs/author_annot/{col}']
+                    del lfile[f'cell_author_annot/{col}']
             if df[col].dtype == object:
-                dset = lfile.create_dataset(f'row_attrs/author_annot/{col}',
-                                            (lfile['matrix'].shape[1], ),
+                # FLAG
+                # dset = lfile.create_dataset(f'row_attrs/author_annot/{col}',
+                #                             (lfile['matrix'].shape[0], ),
+                #                             dtype = h5.string_dtype())
+                dset = lfile.create_dataset(f'gene_author_annot/{col}',
+                                            (lfile['matrix'].shape[0], ),
                                             dtype = h5.string_dtype())
-                dset[:] = df[col]
                 if col not in columns_written.keys():
                     columns_written[col] = None
+                dset[:] = df[col]
             else:
-                dset = lfile.create_dataset(f'row_attrs/author_annot/{col}',
+                # FLAG
+                # dset = lfile.create_dataset(f'row_attrs/author_annot/{col}',
+                #                             data = df[col])
+                dset = lfile.create_dataset(f'gene_author_annot/{col}',
                                             data = df[col])
                 if col not in columns_written.keys():
                     columns_written[col] = None
@@ -642,11 +731,19 @@ def set_gene_int_md_author_annot(uuid, df):
             col_warnings = set() 
             for col_del in columns_written:
                 if columns_written[col_del] is None:
-                    del lfile[f'row_attrs/author_annot/{col_del}']
+                    # FLAG
+                    # del lfile[f'row_attrs/author_annot/{col_del}']
+                    del lfile[f'gene_author_annot/{col_del}']
                 elif type(columns_written[col_del]) == pd.core.series.Series:
-                    if col_del in lfile['row_attrs/author_annot'].keys():
-                        del lfile[f'row_attrs/author_annot/{col_del}']
-                    dset = lfile.create_dataset(f'row_attrs/author_annot/{col_del}',
+                    # FLAG
+                    # if col_del in lfile['row_attrs/author_annot'].keys():
+                    #     del lfile[f'row_attrs/author_annot/{col_del}']
+                    # dset = lfile.create_dataset(f'row_attrs/author_annot/{col_del}',
+                    #                             (lfile['matrix'].shape[1], ),
+                    #                             dtype = h5.string_dtype())
+                    if col_del in lfile['gene_author_annot'].keys():
+                        del lfile[f'gene_author_annot/{col_del}']
+                    dset = lfile.create_dataset(f'gene_author_annot/{col_del}',
                                                 (lfile['matrix'].shape[1], ),
                                                 dtype = h5.string_dtype())
                     dset[:] = columns_written[col_del]
@@ -660,9 +757,12 @@ def set_gene_int_md_author_annot(uuid, df):
                                 'columns may have been converted to '
                                 'strings:\n'
                                 '    ' + '\n    '.join(col_warnings))
+    # FLAG
+    # lfile['row_attrs/author_annot'].attrs['column_order'] = '|'.join(df.columns)
+    lfile['gene_author_annot'].attrs['column_order'] = '|'.join(df.columns)
     lfile.close()
 
-def set_cell_int_md_univ(uuid, df):
+def set_cell_int_md_univ(uuid, df, batch_key):
     """Set the cell universal metadata.
 
     Set the cell universal metadata for a given dataset
@@ -678,6 +778,10 @@ def set_cell_int_md_univ(uuid, df):
             named and typed field from the universal metadata
             schema. There is no validation against the universal
             metadata schema.
+        batch_key: String. The concatenated column names to be
+            stored as an HDF5 attribute on the batch universal
+            internal metadata field.
+            e.g. "Well|SeqRun|Plate"
     
     Returns: None
 
@@ -690,7 +794,7 @@ def set_cell_int_md_univ(uuid, df):
     if df.shape[0] != lfile['matrix'].shape[1]:
         raise ValueError('df has the wrong number of rows!')
     test_cols = np.array(df.columns)
-    if not np.isin(test_cols, np.array(GC._IMU_COL_COLUMN_INDEX.keys())).all():
+    if not np.isin(test_cols, np.array(list(GC._IMU_CELL_COLUMN_INDEX.keys()))).all():
         raise ValueError('df has invalid columns!')
     if np.unique(test_cols).shape[0] != df.columns.shape[0]:
         raise ValueError('df has non-unique columns!')
@@ -705,9 +809,9 @@ def set_cell_int_md_univ(uuid, df):
     for col in df.columns:
         try:
             if col in lfile['col_attrs'].keys():
-                skip_col = input(f'Column \"{col}\" already exists!\n'
-                                'Overwrite? (y/n): ')[0].lower()
-                if skip_col == 'n':
+                overwrite_col = input(f'Column \"{col}\" already exists!\n'
+                                       'Overwrite? (y/n): ')[0].lower()
+                if overwrite_col == 'n':
                     continue
                 else:
                     columns_written[col] = pd.Series(lfile[f'col_attrs/{col}'])
@@ -724,6 +828,8 @@ def set_cell_int_md_univ(uuid, df):
                                             data = df[col])
                 if col not in columns_written.keys():
                     columns_written[col] = None
+            if col == 'batch':
+                dset.attrs['batch_key'] = batch_key
         except:
             col_warnings = set() 
             for col_del in columns_written:
@@ -776,7 +882,7 @@ def set_gene_int_md_univ(uuid, df):
     if df.shape[0] != lfile['matrix'].shape[0]:
         raise ValueError('df has the wrong number of rows!')
     test_cols = np.array(df.columns)
-    if not np.isin(test_cols, np.array(GC._IMU_ROW_COLUMN_INDEX.keys())).all():
+    if not np.isin(test_cols, np.array(list(GC._IMU_GENE_COLUMN_INDEX.keys()))).all():
         raise ValueError('df has invalid columns!')
     if np.unique(test_cols).shape[0] != df.columns.shape[0]:
         raise ValueError('df has non-unique columns!')
@@ -791,9 +897,9 @@ def set_gene_int_md_univ(uuid, df):
     for col in df.columns:
         try:
             if col in lfile['row_attrs'].keys():
-                skip_col = input(f'Column \"{col}\" already exists!\n'
-                                'Overwrite? (y/n): ')[0].lower()
-                if skip_col == 'n':
+                overwrite_col = input(f'Column \"{col}\" already exists!\n'
+                                       'Overwrite? (y/n): ')[0].lower()
+                if overwrite_col == 'n':
                     continue
                 else:
                     columns_written[col] = pd.Series(lfile[f'row_attrs/{col}'])
