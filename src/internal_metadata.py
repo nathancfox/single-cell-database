@@ -1,5 +1,7 @@
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
+# Used for section below
+# import re
 import numpy as np
 import pandas as pd
 import h5py as h5
@@ -97,6 +99,273 @@ import global_constants as GC
 #     else:
 #         return(get_gene_int_md_author_annot(uuid))
 
+def construct_batch(df, columns):
+    """Construct a universal internal metadata batch field.
+
+    Given a dataframe and a list of columns in that dataframe,
+    concatenate the values to construct a 'batch' column
+    for the cell internal metadata.
+
+    Args:
+        df: Pandas DataFrame. Contains columns that will be
+            parts of the batch column.
+        columns: List of strings. List of column names,
+            in order, that will be concatenated to
+            form the 'batch' column.
+
+    Returns:
+        A Pandas Series object containing the new 'batch'
+        column for the cell internal universal metadata.
+
+    Raises: None
+    """
+    df = df[columns]
+    out = []
+    for i in range(df.shape[0]):
+        out.append('|'.join(df.iloc[i].apply(str)))
+    out = pd.Series(out)
+    return(out)
+
+# These methods were built to support a MAPPING schema
+# originally described in blog post "Nathan: Jan 6 - Jan 10"
+# I decided not to use the MAPPING schema, at least at
+# first and so all of these are UNTESTED!!! and not
+# being used right now.
+# 
+# def construct_default_mapping(column, zero_value = None,
+#                               batch = False):
+#     """Construct a mapping for a universal metadata field.
+
+#     Given a list of values, convert the list to a list
+#     of integers, mapped to the original set of unique
+#     values. Also return the array of strings to be
+#     set as the HDF5 attribute for this HDF5 dataset.
+#     See the internal universal metadata specification
+#     for details.
+
+#     Args:
+#         column: List-like object. List of values to be
+#             converted to a mapping. Must be convertable
+#             to a Pandas Series.
+#         zero_value: Any of the values of column. If not
+#             None, this value will be mapped to 0 instead
+#             of a regular mapping integer.
+#         batch: If True, handles the case where column is
+#             the 'batch' column and there are multiple
+#             '|'-delimited fields inside the mapping.
+    
+#     Returns:
+#         A 2-member tuple. The first member is the original list
+#         with the values replaced by their corresponding integers.
+#         The second member is an array of mappings from the integers
+#         to their descriptions.
+
+#     Raises: None
+#     """
+#     column = pd.Series(column) 
+#     if batch:
+#         raise AssertionError('batch is not built yet!')
+#     # TODO(Nathan Fox): Convert NaN etc to "-1"
+#     mapping_dict = {}
+#     counter = 1
+#     for value in column.unique():
+#         if zero_value is not None:
+#             if value == zero_value:
+#                 mapping_dict[str(value)] = 0
+#                 continue
+#         mapping_dict[str(value)] = counter
+#         counter += 1
+#     mapping = column.map(mapping_dict)
+#     rev_mapping_dict = {}
+#     for k, v in mapping_dict:
+#         rev_mapping_dict[str(v)] = k
+#     mapping_key = []
+#     for k in sorted(list(rev_mapping_dict.keys())):
+#         mapping_key.append(f'{k}:{rev_mapping_dict[k]}')
+#     mapping_key = np.array(mapping_key)
+#     return((mapping, mapping_key)) 
+
+# def construct_interactive_mapping(column, batch = False):
+#     """Run an interactive constructor for a universal metadata mapping.
+
+#     Run an interactive input application for constructing an
+#     internal universal metadata mapping.
+
+#     Args:
+#         column: List-like object. List of values to be
+#             converted to a mapping. Must be convertable
+#             to a Pandas Series.
+#         batch: If True, handles the case where column is
+#             the 'batch' column and there are multiple
+#             '|'-delimited fields inside the mapping.
+    
+#     Returns:
+#         A 2-member tuple. The first member is the original list
+#         with the values replaced by their corresponding integers.
+#         The second member is an array of mappings from the integers
+#         to their descriptions.
+
+#     Raises: None
+#     """
+#     column = pd.Series(column) 
+#     if batch:
+#         raise AssertionError('batch is not built yet!')
+#     # TODO(Nathan Fox): Convert NaN etc to "-1"
+#     mapping_dict = {}
+#     counter = 1
+#     for value in column.unique():
+#         if zero_value is not None:
+#             if value == zero_value:
+#                 mapping_dict[str(value)] = 0
+#                 continue
+#         mapping_dict[str(value)] = counter
+#         counter += 1
+#     mapping = column.map(mapping_dict)
+#     rev_mapping_dict = {}
+#     for k, v in mapping_dict:
+#         rev_mapping_dict[str(v)] = k
+#     intro_text = (
+#                     '\n'
+#                     'Construct a Mapping\n'
+#                     '-------------------\n'
+#                     '\n'
+#                     'For each unique value in the Series, map it to\n'
+#                     'an integer and store its description in a mapping.\n'
+#                     'Each mapping value will be stored as a string of\n'
+#                     'the format \"INTEGER:DESCRIPTION\", where the mapped\n' 
+#                     'integer is followed by a colon, then a string of any\n'
+#                     'length describing the value. Each prompt will ask you\n'
+#                     'for the DESCRIPTION text. The text may not have\n'
+#                     'a vertical bar character \"|\" in it. If the substring\n'
+#                     '\"{name}\" is in the DESCRIPTION, it will be replaced\n'
+#                     'with the name of the value.\n'
+#                     '\n'
+#                     'To execute one of the following options, enter\n'
+#                     'the command in any of the prompts.\n'
+#                     '    QUIT    : Abort this mapping construction\n'
+#                     '    RESTART : Start this mapping construction over\n'
+#                     '    HELP    : Get instructions for input\n'
+#                     '    LIST    : Get a list of already entered mappings\n'
+#     ) 
+#     print(intro_text)
+#     input('Press Enter to continue...')
+#     print()
+#     loop = True
+#     unique_vals = list(mapping_dict.keys())
+#     val_idx = 0
+#     # Not sure if it's better for mapping_key to be a dict
+#     # or a list.
+#     mapping_key = ['FILL_ME_IN' for i in range(len(unique_vals))]
+#     # mapping_key = {val: 'FILL_ME_IN' for val in unique_vals}
+#     print_uniq_vals = input(f'There are {len(unique_vals)}.\n'
+#                              'Do you want to view them before '
+#                              'starting? (y/n) : ')[0].lower()
+#     if print_uniq_vals == 'y':
+#         print()
+#         print('Unique Values')
+#         print('-------------')
+#         for val in unique_vals:
+#             print(f'  {val}')
+#         print()
+#     while loop:
+#         val_name = unique_vals[val_idx]
+#         print(f'Value: {val_name}')
+#         print('Description:')
+#         user_input = input('> ')
+#         if user_input == 'QUIT':
+#             print('\nExiting...')
+#             return
+#         elif user_input == 'RESTART':
+#             print('\nStarting over...')
+#             print(intro_text)
+#             loop = True
+#             unique_vals = list(mapping_dict.keys())
+#             val_idx = 0
+#             mapping_key = ['FILL_ME_IN' for i in range(len(unique_vals))]
+#             print_uniq_vals = input(f'There are {len(unique_vals)}.\n'
+#                                     'Do you want to view them before '
+#                                     'starting? (y/n) : ')[0].lower()
+#             if print_uniq_vals == 'y':
+#                 print()
+#                 print('Unique Values')
+#                 print('-------------')
+#                 for val in unique_vals:
+#                     print(f'  {val}')
+#                 print()
+#             continue
+#         elif user_input == 'HELP':
+#             help_text = (
+#                             'Description Format:\n'
+#                             '    1. No \"|\" characters allowed.\n'
+#                             '    2. \"{name}\" will be replaced with the value name.\n'
+#                             '\n'
+#                             'Commands:\n'
+#                             '    QUIT    : Abort this mapping construction\n'
+#                             '    RESTART : Start this mapping construction over\n'
+#                             '    HELP    : Get this help page\n'
+#                             '    LIST    : Get a list of already entered mappings\n'
+#             )
+#             print()
+#             print(help_text)
+#             print()
+#             continue
+#         elif user_input == 'LIST':
+#             print()
+#             print('Values Already Entered')
+#             print('----------------------')
+#             max_width = max(list(map(lambda x: 0 if x == 'FILL_ME_IN' else len(x),
+#                                      mapping_key)))
+#             for val in mapping_key:
+#                 if val == 'FILL_ME_IN':
+#                     continue
+#                 val = val.split(':')
+#                 print(f'  {rev_mapping_dict[val[0]]:{max_width}s} : {''.join(val[1:])}')
+#             print()
+#             continue
+#         else:
+#             if user_input == '':
+#                 if input('Are you sure you want to leave this '
+#                          'DESCRIPTION empty? (y/n) : ')[0].lower() == 'n':
+#                     print()
+#                     continue
+#             if '|' in user_input:
+#                 print()
+#                 print('ERROR: You cannot have a \"|\" character in your DESCRIPTION!')
+#                 print()
+#                 continue
+#             new_desc = re.sub(r'{name}', val_name, user_input)
+#             new_desc = f'{mapping_dict[val_name]}:{new_desc}'
+#             mapping_key[val_idx] = new_desc
+#             val_idx += 1
+#             if val_idx >= len(unique_vals):
+#                 loop = False
+#             print()
+#     if 'FILL_ME_IN' in mapping_key:
+#         raise AssertionError('At least one value did not get a DESCRIPTION!')
+#     # if 'FILL_ME_IN' in mapping_key.values():
+#     #     raise AssertionError('At least one value did not get a DESCRIPTION!')
+#     return((mapping, mapping_key))
+                
+# def construct_mapping(column, zero_value = None, mode = 'default')
+#     """Construct a mapping for an internal universal metadata column.
+
+#     Acts as a router method to one of the two helper methods
+#     with appropriate arguments selected.
+#     """
+#     if mode == 'default':
+#         return(construct_default_mapping(column, zero_value = zero_value))
+#     elif mode == 'interactive':
+#         return(construct_interactive_mapping(column))
+#     elif mode == 'batch_default':
+#         return(construct_default_mapping(column, zero_value = zero_value,
+#                                          batch = True))
+#     elif mode == 'batch_interactive':
+#         return(construct_interactive_mapping(column, batch = True))
+#     else:
+#         raise ValueError('mode can only be one of [\"default\", '
+#                          '\"interactive\", \"batch_default\", '
+#                          '\"batch_interactive\"]')
+
 def get_cell_int_md_univ(uuid, keep_missing = True):
     """Get the cell universal metadata.
 
@@ -118,7 +387,7 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
     """
     lfile = ac__.get_h5_conn(uuid)
     col_keys = list(lfile['col_attrs'].keys())
-    col_data = pd.DataFrame(index = lfile['col_attrs/CellID'])
+    col_data = pd.DataFrame(index = np.array(lfile['col_attrs/CellID']))
     for key in col_keys:
         if key == 'author_annot':
             continue
@@ -156,9 +425,9 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
     lfile = ac__.get_h5_conn(uuid)
     row_keys = list(lfile['row_attrs'].keys())
     if 'Gene' in row_keys:
-        row_data = pd.DataFrame(index = lfile['row_attrs/Gene'])
+        row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
     elif 'Accession' in row_keys:
-        row_data = pd.DataFrame(index = lfile['row_attrs/Accession'])
+        row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
     else:
         row_data = pd.DataFrame()
     for key in row_keys:
@@ -194,7 +463,7 @@ def get_cell_int_md_author_annot(uuid):
     """
     lfile = ac__.get_h5_conn(uuid)
     col_keys = list(lfile['col_attrs/author_annot'].keys())
-    col_data = pd.DataFrame(index = lfile['col_attrs/CellID'])
+    col_data = pd.DataFrame(index = np.array(lfile['col_attrs/CellID']))
     for key in col_keys:
         key_path = 'col_attrs/author_annot/' + key
         if len(lfile[key_path].shape) == 1:
@@ -223,9 +492,9 @@ def get_gene_int_md_author_annot(uuid):
     lfile = ac__.get_h5_conn(uuid)
     row_keys = list(lfile['row_attrs/author_annot'].keys())
     if 'Gene' in row_keys:
-        row_data = pd.DataFrame(index = lfile['row_attrs/Gene'])
+        row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
     elif 'Accession' in row_keys:
-        row_data = pd.DataFrame(index = lfile['row_attrs/Accession'])
+        row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
     else:
         row_data = pd.DataFrame()
     for key in row_keys:
