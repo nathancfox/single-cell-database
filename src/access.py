@@ -99,14 +99,13 @@ def get_anndata(uuid, **kwargs):
     # Handles the loom convention that genes may be named
     # in the 'Gene' or 'Accession' row attribute.
     if 'var_names' not in kwargs.keys():
-        lfile = get_h5_conn(uuid)
-        if 'Gene' in lfile['row_attrs'].keys():
-            pass
-        elif 'Accession' in lfile['row_attrs'].keys():
-            kwargs['var_names'] = 'Accession'
-        else:
-            pass
-    lfile.close()
+        with get_h5_conn(uuid) as lfile:
+            if 'Gene' in lfile['row_attrs'].keys():
+                pass
+            elif 'Accession' in lfile['row_attrs'].keys():
+                kwargs['var_names'] = 'Accession'
+            else:
+                pass
     adata = sc.read_loom(get_loom_filename(uuid), **kwargs)
     adata.obs = adata.obs[sorted(adata.obs.columns,
                                  key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])]
@@ -244,35 +243,34 @@ def uuid_to_row(uuid, columns = None):
     return(em__.uuid_to_row(uuid, columns))
 
 def get_cell_ids(uuid):
-    lfile = get_h5_conn(uuid)
-    cell_ids = np.array(lfile['col_attrs/CellID'])
-    lfile.close()
-    return(cell_ids)
+    with get_h5_conn(uuid) as lfile:
+        cell_ids = np.array(lfile['col_attrs/CellID'])
+        return(cell_ids)
 
 def get_gene_ids(uuid, accession = False):
-    lfile = get_h5_conn(uuid)
-    if accession:
-        if 'Accession' in lfile['row_attrs'].keys():
-            gene_ids = np.array(lfile['row_attrs/Accession']) 
-        elif 'Gene' in lfile['row_attrs'].keys():
-            print('Warning! "Accession" not available. Returning \"Gene\" '
-                  'instead.')
-            gene_ids = np.array(lfile['row_attrs/Gene']) 
+    with get_h5_conn(uuid) as lfile:
+        if accession:
+            if 'Accession' in lfile['row_attrs'].keys():
+                gene_ids = np.array(lfile['row_attrs/Accession']) 
+            elif 'Gene' in lfile['row_attrs'].keys():
+                print('Warning! "Accession" not available. Returning \"Gene\" '
+                    'instead.')
+                gene_ids = np.array(lfile['row_attrs/Gene']) 
+            else:
+                raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
+                                    f'an \"Accession\" row attribute!')
         else:
-            raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
-                                 f'an \"Accession\" row attribute!')
-    else:
-        if 'Gene' in lfile['row_attrs'].keys():
-            gene_ids = np.array(lfile['row_attrs/Gene']) 
-        elif 'Accession' in lfile['row_attrs'].keys():
-            print('Warning! "Gene" not available. Returning \"Accession\" '
-                  'instead.')
-            gene_ids = np.array(lfile['row_attrs/Accession']) 
-        else:
-            raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
-                                 f'an \"Accession\" row attribute!')
-    lfile.close()
-    return(gene_ids)
+            if 'Gene' in lfile['row_attrs'].keys():
+                gene_ids = np.array(lfile['row_attrs/Gene']) 
+            elif 'Accession' in lfile['row_attrs'].keys():
+                print('Warning! "Gene" not available. Returning \"Accession\" '
+                    'instead.')
+                gene_ids = np.array(lfile['row_attrs/Accession']) 
+            else:
+                raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
+                                    f'an \"Accession\" row attribute!')
+        lfile.close()
+        return(gene_ids)
 
 def main():
     pass

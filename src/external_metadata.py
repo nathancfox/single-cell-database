@@ -362,8 +362,8 @@ def verify_global_constants():
     except:
         print('GLOBAL VAR ERROR: _PATH_TO_METADATA file open failed!')
         return
-    header = f.readline()
-    f.close()
+    with f as f:
+        header = f.readline()
     if header == '':
         raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA is an empty file!') 
     header = header.strip().split(sep = '\t')
@@ -403,7 +403,7 @@ def verify_global_constants():
                                  'may be the problem.')
 
 def main():
-    get_new_row_input()
+    pass
 
 # Every time this module is run or imported, check
 # the integrity of the global constants.

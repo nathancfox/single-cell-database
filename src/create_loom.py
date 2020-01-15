@@ -56,14 +56,14 @@ def create_loom_file(file_path, expr_matrix, barcodes, features,
     except MemoryError:
         print('\nERROR: Dataset too large to create a loom file!\n')
         sys.exit(1)
-    lfile = h5.File(file_path, "r+")
+    with h5.File(file_path, 'r+') as lfile:
 
-    # Add edits to the loom file specification
-    # FLAG
-    # lfile.create_group("col_attrs/author_annot")
-    # lfile.create_group("row_attrs/author_annot")
-    lfile.create_group("cell_author_annot")
-    lfile.create_group("gene_author_annot")
+        # Add edits to the loom file specification
+        # FLAG
+        # lfile.create_group("col_attrs/author_annot")
+        # lfile.create_group("row_attrs/author_annot")
+        lfile.create_group("cell_author_annot")
+        lfile.create_group("gene_author_annot")
 
     # I'm not sure if I want to keep this. This pre-creates the
     # universal internal metadata fields as empty HDF5 datasets.
@@ -74,7 +74,6 @@ def create_loom_file(file_path, expr_matrix, barcodes, features,
     #                                           key = lambda x: x[1])]
     # for field in univ_fields:
     #     lfile.create_dataset(f'col_attrs/{field}', shape = (n_col, ))
-    lfile.close()
 
 
 def get_expr_matrix_from_cellranger(path, prefix):
