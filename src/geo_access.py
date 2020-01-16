@@ -234,8 +234,6 @@ def get_directory_listing(path):
     
     Raises: None
     """
-    # old_wd = os.getcwd()
-    # os.chdir(path)
     listing = []
     with os.scandir(path) as current_dir:
         for entry in current_dir:
@@ -244,7 +242,6 @@ def get_directory_listing(path):
             else:
                 listing.append(entry.name)
     listing.sort()
-    # os.chdir(old_wd)
     return(listing)
 
 def log_directory_listing(path, old_listing = None):
@@ -276,8 +273,6 @@ def log_directory_listing(path, old_listing = None):
     Returns: None
     Raises: None
     """
-    # old_wd = os.getcwd()
-    # os.chdir(path)
     if old_listing is None:
         listing = get_directory_listing(path)
         with open(os.path.join(path, 'log.txt'), 'a') as f:
@@ -327,7 +322,6 @@ def log_directory_listing(path, old_listing = None):
                 for entry in deleted_files:
                     f.write(f'{idt}{idt}{entry}\n')
 
-    # os.chdir(old_wd)
 
 def download_series_to_db(gse_id, path, log = True):
     """Downloads a GEO Series to the database.
@@ -365,7 +359,52 @@ def download_series_to_db(gse_id, path, log = True):
         log_directory_listing(path, old_listing = old_listing)
     return(new_id)
 
-    
+def get_sample_char_from_soft(soft_file):
+    """Get all sample characteristics from a SOFT file.
+
+    Get a dictionary of dictionaries of all sample characteristics
+    for each sample in a SOFT file.
+
+    Args:
+        soft_file: String. Filepath to the SOFT file to parse.
+
+    Returns:
+        A dictionary of dictionaries. The outer dict has sample
+        titles as keys and dicts as values. The inner dicts
+        have sample characteristic titles as keys and
+        sample characteristic values as values.
+
+        Example:
+            {'10X43_1_AAAGACGATCTCGC-1':
+                {
+                    'strain/background': 'CD-1',
+                    'genotype/variation': 'wild type'
+                }}
+    """
+    with open(soft_file, 'r') as f:
+        samples = {}
+        new_sample = {}
+        new_sample_title = ''
+        for line in f:
+            if line[:7] == '^SAMPLE':
+                if new_sample_title != '':
+                    samples[new_sample_title] = new_sample
+                    new_sample = {}
+                    new_sample_title = ''
+                new_sample_title = line.split(' = ')[1].strip(' \n\t')
+            elif line[:13] == '!Sample_title':
+                new_sample_title = line.split(' = ')[1].strip(' \n\t')
+            elif line[:27] == '!Sample_characteristics_ch1':
+                line = line.split(' = ')[1]
+                line = line.split(': ')
+                new_sample[line[0].strip(' \n\t')] = line[1].strip(' \n\t')
+        if new_sample_title != '':
+            samples[new_sample_title] = new_sample
+            new_sample = {}
+            new_sample_title = ''
+        
+    return(samples) 
+
 def main():
     pass
 

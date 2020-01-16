@@ -148,7 +148,7 @@ def get_new_row_input(pre_fill = None):
                 for k, v in GC._TISSUE_LIST.items():
                     print(f'{k}')
                     print('-' * (len(k)))
-                    print(gu__.print_list(v, width = 50, idt = '  '))
+                    print(gu__.pretty_str_list(v, width = 50, indent = '  '))
                     print()
             elif col_idx == 5:
                 # count_format
@@ -156,7 +156,7 @@ def get_new_row_input(pre_fill = None):
                 print()
                 print('Possible Values')
                 print('---------------')
-                print(gu__.print_list(values, width = 50, idt = '  '))
+                print(gu__.pretty_str_list(values, width = 50, indent = '  '))
                 print()
             elif col_idx == 8:
                 # technology
@@ -166,7 +166,7 @@ def get_new_row_input(pre_fill = None):
                 print()
                 print('Technologies in Database')
                 print('------------------------')
-                print(gu__.print_list(values, width = 50, idt = '  '))
+                print(gu__.pretty_str_list(values, width = 50, indent = '  '))
                 print()
             else:
                 print()

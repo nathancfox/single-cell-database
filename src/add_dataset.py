@@ -28,6 +28,36 @@ def print_workflow():
     print()
     print(workflow)
 
+def print_tissue_list():
+    print()
+    for k, v in GC._TISSUE_LIST.items():
+        print(f'{k}')
+        print('-' * (len(k)))
+        print(gu__.pretty_str_list(v, width = 50, indent = '  '))
+        print()
+
+def print_imu(*args):
+    if len(args) == 0:
+        column_order = sorted(list(GC._IMU_CELL_COLUMN_INDEX.keys()),
+                              key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
+        print()
+        print('Columns')
+        print('-------')
+        for col in column_order:
+            print(f'  {col}')
+        print()
+    else:
+        if len(args) == 1 and type(args[0]) == list:
+            args = list(args[0])
+        column_order = sorted(list(args),
+                              key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
+        print()
+        print('Column Descriptions')
+        print('-------------------')
+        for col in column_order:
+            print(f'{GC._IMU_CELL_COLUMN_DESCRIPTIONS[col]}')
+            print()
+
 def setup():
     print('Add a New Dataset to the Single-Cell Database')
     print('=============================================')
@@ -92,7 +122,8 @@ def add_external_metadata():
             print(f'{i + 1:02}. {col:{max_length}} : {new_row[i]:s}')
         print()
         # Unicode-2191 is an up arrow
-        loop = loop_dict[input(u'\u2191 New Entry. Are you sure (y/n): ').lower()[0]]
+        if gu__.get_yes_or_no(u'\u2191 New Entry. Are you sure? (y/n): '):
+            loop = False
     em__.append_row(new_row)
 
 def main():
