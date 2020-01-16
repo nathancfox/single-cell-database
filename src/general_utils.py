@@ -5,6 +5,7 @@ import uuid
 import os
 import gzip
 import shutil
+import pandas as pd
 
 def get_timestamp(mode = 'both', long = True):
     """Generates string timestamp.
@@ -88,7 +89,7 @@ def gunzip(files, remove = True):
             os.remove(os.path.join(path, filename)) 
     
 def pretty_str_list(list, width = 50, indent = '',
-                    print_str = False): 
+                    one_per_line = False): 
     """Creates pretty string of a list.
 
     Creates a pretty string of the items in a list within
@@ -132,9 +133,9 @@ def pretty_str_list(list, width = 50, indent = '',
             including the indent.
         indent: A string to preprend to each line. For example, to
             indent the whole output, use '    ' (4 whitespaces).
-        print_str: Boolean. If True, the pretty string will be printed,
-            and None will be returned. If False, the pretty string
-            will be returned and nothing will be printed.
+        one_per_line: Boolean. If True, all elements will be printed
+            on their own lines, without commas, regardless of
+            element length.
         
     Returns:
         A single string containing appropriate new lines and indents
@@ -150,8 +151,14 @@ def pretty_str_list(list, width = 50, indent = '',
     width -= len(indent) 
     for idx, item in enumerate(list): 
         item = str(item) 
-        if idx < len(list) - 1: 
+        if idx < len(list) - 1 and (not one_per_line): 
             item += ',' 
+        if one_per_line:
+            str_out.append(item)
+            if idx < len(list) - 1:
+                str_out.append('\n' + indent)
+            continue
+        # Only runs if one_per_line is False
         if len(item) >= width: 
             if line_counter != 0: 
                 str_out.append('\n' + indent) 
@@ -174,10 +181,93 @@ def pretty_str_list(list, width = 50, indent = '',
                 str_out.append(item)
                 line_width += len(item) 
     str_out = ''.join(str_out)
-    if print_str:
-        print(str_out)
-    else:
-        return(str_out)
+    return(str_out)
+
+def convert_dict_to_dataframe(dict_of_dicts):
+    """Convert dict of dicts to a Pandas DataFrame.
+
+    Convert a dictionary of dictionaries to a Pandas
+    DataFrame, where the keys of the outer dict become
+    the Index for the resultant DataFrame. The keys
+    of the inner dicts must all be identical and
+    become the columns of the resultant DataFrame.
+
+    Example:
+        >>> test_dict
+        {'Sample_1': {'sex': 'F', 'age': 13},
+         'Sample_2': {'sex': 'M', 'age': 14}}
+        >>> convert_dict_to_dataframe(test_dict)
+                  age sex
+        Sample_1   13   F
+        Sample_2   14   M
+        
+    Args:
+        dict_of_dicts: Dict. The keys of this dict
+            will be the Index of the dataframe. The values
+            must be dicts with identical keys. The inner keys
+            will be the column names of the dataframe. The
+            inner values will be the values of the dataframe.
+    
+    Returns:
+        A Pandas DataFrame holding the converted dict of dicts.
+
+    Raises:
+        ValueError: If all inner dicts don't have identical keys.
+    """
+    first_dict = True
+    index = []
+    for k, v in dict_of_dicts.items():
+        if first_dict:
+            ref_keys = pd.Series(sorted(list(v.keys())))
+            new_dict = {ref_key:[] for ref_key in ref_keys}
+            first_dict = False
+        index.append(k)
+        test_keys = pd.Series(sorted(list(v.keys())))
+        if (test_keys.shape[0] != ref_keys.shape[0]
+            or (test_keys != ref_keys).any()):
+            raise ValueError('Not all inner dicts have the same keys!')
+        for k2, v2 in v.items():
+            new_dict[k2].append(v2)
+    new_df = pd.DataFrame(new_dict, index = index)
+    return(new_df)
+
+def get_yes_or_no(input_string):
+    """Get a yes or no response from the user.
+
+    Get a yes or no response from the user in a way
+    that handles invalid responses. If this code
+    doesn't produce a 'y' or a 'n', then the prompt
+    prints an error and loops.
+
+    Code: INPUT_FROM_USER[0].lower()
+
+    Args:
+        input_string: String. Prompt fed to input()
+    
+    Returns:
+        Boolean. True if answer was yes. False if no.
+
+    Raises: None
+    """
+    yn_loop = True
+    while yn_loop:
+        user_input = input(input_string)
+        if user_input is None:
+            print('ERROR: Please enter yes or no!')
+            continue
+        if len(user_input) == 0:
+            print('ERROR: Please enter yes or no!')
+            continue
+        user_input = user_input[0].lower()
+        if user_input == 'y':
+            yn_loop = False
+            return(True)
+        elif user_input == 'n':
+            yn_loop = False
+            return(False)
+        else:
+            print('ERROR: Please enter yes or no!')
+            continue
 
 def main():
     pass
