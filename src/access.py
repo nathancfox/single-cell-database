@@ -243,11 +243,40 @@ def uuid_to_row(uuid, columns = None):
     return(em__.uuid_to_row(uuid, columns))
 
 def get_cell_ids(uuid):
+    """Get cell IDs from a dataset.
+
+    Get the cell IDs from a specific dataset.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+
+    Returns:
+        A 1-D numpy array of strings holding the cell IDs.
+
+    Raises: None
+    """
     with get_h5_conn(uuid) as lfile:
         cell_ids = np.array(lfile['col_attrs/CellID'])
         return(cell_ids)
 
 def get_gene_ids(uuid, accession = False):
+    """Get gene IDs from a dataset.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        accession: Boolean. If True, the "Accession" field
+            will be returned. If False, the "Gene" field
+            will be returned. If the chosen field is not
+            available and the other is, a warning will be
+            printed and the other will be returned.
+        
+    Returns:
+        A 1-D numpy array of strings holding the gene IDs.
+
+    Raises:
+        AssertionError: If the dataset does not have either a
+            "Gene" field or an "Accession" field.
+    """
     with get_h5_conn(uuid) as lfile:
         if accession:
             if 'Accession' in lfile['row_attrs'].keys():
@@ -271,6 +300,47 @@ def get_gene_ids(uuid, accession = False):
                                     f'an \"Accession\" row attribute!')
         lfile.close()
         return(gene_ids)
+
+def get_column_description(uuid, column, var = 'cell', metadata = 'universal'):
+    """Get the description for an internal metadata column.
+
+    This is a wrapper around methods from internal_metadata.py
+    Get the HDF5 attribute "description" from a column in
+    the internal universal or author_annot metadata for a
+    given dataset.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired column.
+        var: String. Must be "cell" or "gene". Indicates
+            the metadata to be queried.
+        metadata: String. Must be "universal" or "author_annot".
+            Indicates the metadata to be queried.
+
+    Returns:
+        Whatever is at the "description" HDF5 attribute of the
+        requested column. If no description is available, a
+        warning will be printed and the method will return None.
+
+    Raises:
+        ValueError: If var or metadata is passed an invalid value.
+    """
+    if metadata == 'universal':
+        if var == 'cell':
+            return(im__.get_cell_univ_col_desc(uuid, column))
+        elif var == 'gene':
+            return(im__.get_gene_univ_col_desc(uuid, column))
+        else:
+            raise ValueError('var must be \"cell\" or \"gene\"!')
+    elif metadata == 'author_annot':
+        if var == 'cell':
+            return(im__.get_cell_aa_col_desc(uuid, column))
+        elif var == 'gene':
+            return(im__.get_gene_aa_col_desc(uuid, column))
+        else:
+            raise ValueError('var must be \"cell\" or \"gene\"!')
+    else:
+        raise ValueError('metadata must be \"universal\" or \"author_annot\"!')
 
 def main():
     pass

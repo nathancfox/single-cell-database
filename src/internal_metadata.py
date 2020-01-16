@@ -1,133 +1,12 @@
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
-# Used for section below
-# import re
 import numpy as np
 import pandas as pd
 import h5py as h5
+import re
 import access as ac__
 import global_constants as GC
-
-# Accidentally wrote these methods twice. Once here, and once
-# access.py. The ones in access.py are better, so I'm copying
-# them here. Once I vet them and run some tests, I'll actually
-# delete these, but for now, I don't want to lose the code.
-#
-# def get_cell_int_md_univ(uuid):
-#     """Gets the cell internal universal metadata for a dataset.
-# 
-#     For a given dataset, get the cell internal universal
-#     metadata as a Pandas DataFrame.
-# 
-#     Args:
-#         uuid: The UUID of the desired dataset.
-# 
-#     Returns:
-#         A Pandas DataFrame containing 
-#     """
-#     lfile = ac__.get_h5_conn(uuid)
-#     new_df = {}
-#     for k, v in lfile['col_attrs'].items():
-#         if (len(v.shape) == 1) and (v.shape[0] == lfile['matrix'].shape[1]):
-#             new_df[k] = pd.Series(v)
-#     idx = new_df['CellID']
-#     del new_df['CellID']
-#     new_df = pd.DataFrame(new_df)
-#     new_df.index = idx
-#     lfile.close()
-#     return(new_df)
-# 
-# def get_gene_int_md_univ(uuid):
-#     lfile = ac__.get_h5_conn(uuid)
-#     new_df = {}
-#     for k, v in lfile['row_attrs'].items():
-#         if (len(v.shape) == 1) and (v.shape[0] == lfile['matrix'].shape[0]):
-#             new_df[k] = pd.Series(v)
-#     if 'Gene' in lfile['row_attrs'].keys():
-#         idx = new_df['Gene']
-#         del new_df['Gene']
-#     elif 'Accession' in lfile['row_attrs'].keys():
-#         idx = new_df['Accession']
-#         del new_df['Accession']
-#     else:
-#         raise AssertionError(f'Loom file {uuid} does not have a '
-#                               'row_attrs/Gene or a row_attrs/Accession!')
-#     new_df = pd.DataFrame(new_df)
-#     new_df.index = idx
-#     lfile.close()
-#     return(new_df)
-# 
-# def get_cell_int_md_author_annot(uuid):
-#     lfile = ac__.get_h5_conn(uuid)
-#     new_df = {}
-#     for k, v in lfile['col_attrs/author_annot'].items():
-#         if (len(v.shape) == 1) and (v.shape[0] == lfile['matrix'].shape[1]):
-#             new_df[k] = pd.Series(v)
-#     idx = pd.Series(lfile['col_attrs/CellID'])
-#     new_df = pd.DataFrame(new_df)
-#     new_df.index = idx
-#     lfile.close()
-#     return(new_df)
-# 
-# def get_gene_int_md_author_annot(uuid):
-#     lfile = ac__.get_h5_conn(uuid)
-#     new_df = {}
-#     for k, v in lfile['row_attrs/author_annot'].items():
-#         if (len(v.shape) == 1) and (v.shape[0] == lfile['matrix'].shape[0]):
-#             new_df[k] = pd.Series(v)
-#     if 'Gene' in lfile['row_attrs'].keys():
-#         idx = pd.Series(lfile['row_attrs/Gene'])
-#     elif 'Accession' in lfile['row_attrs'].keys():
-#         idx = pd.Series(lfile['row_attrs/Accession'])
-#     else:
-#         raise AssertionError(f'Loom file {uuid} does not have a '
-#                               'row_attrs/Gene or a row_attrs/Accession!')
-#     new_df = pd.DataFrame(new_df)
-#     new_df.index = idx
-#     lfile.close()
-#     return(new_df)
-# 
-# def get_cell_int_md(uuid, universal = True):
-#     if universal:
-#         return(get_cell_int_md_univ(uuid))
-#     else:
-#         return(get_cell_int_md_author_annot(uuid))
-# 
-# def get_gene_int_md(uuid, universal = True):
-#     if universal:
-#         return(get_gene_int_md_univ(uuid))
-#     else:
-#         return(get_gene_int_md_author_annot(uuid))
-
-def construct_batch(df, columns):
-    """Construct a universal internal metadata batch field.
-
-    Given a dataframe and a list of columns in that dataframe,
-    concatenate the values to construct a 'batch' column
-    for the cell internal metadata.
-
-    Args:
-        df: Pandas DataFrame. Contains columns that will be
-            parts of the batch column.
-        columns: List of strings. List of column names,
-            in order, that will be concatenated to
-            form the 'batch' column.
-
-    Returns:
-        A tuple with 2 members:
-          1. A Pandas Series object containing the new 'batch'
-             column for the cell internal universal metadata.
-          2. A single string with the column names concatenated
-             to describe the new batch column values.
-
-    Raises: None
-    """
-    df = df[columns]
-    out = []
-    for i in range(df.shape[0]):
-        out.append('|'.join(df.iloc[i].apply(str)))
-    out = pd.Series(out)
-    return((out, '|'.join(columns)))
+import general_utils as gu__
 
 # These methods were built to support a MAPPING schema
 # originally described in blog post "Nathan: Jan 6 - Jan 10"
@@ -369,6 +248,72 @@ def construct_batch(df, columns):
 #                          '\"interactive\", \"batch_default\", '
 #                          '\"batch_interactive\"]')
 
+def construct_batch(df, columns):
+    """Construct a universal internal metadata batch field.
+
+    Given a dataframe and a list of columns in that dataframe,
+    concatenate the values to construct a 'batch' column
+    for the cell internal metadata.
+
+    Args:
+        df: Pandas DataFrame. Contains columns that will be
+            parts of the batch column.
+        columns: List of strings. List of column names,
+            in order, that will be concatenated to
+            form the 'batch' column.
+
+    Returns:
+        A tuple with 2 members:
+          1. A Pandas Series object containing the new 'batch'
+             column for the cell internal universal metadata.
+          2. A single string with the column names concatenated
+             to describe the new batch column values.
+
+    Raises: None
+    """
+    df = df[columns]
+    out = []
+    for i in range(df.shape[0]):
+        out.append('|'.join(df.iloc[i].apply(str)))
+    out = pd.Series(out)
+    out.index = df.index
+    for i, col in enumerate(columns):
+        if '/' in col:
+            columns[i] = re.sub(r'/', r'_', col)
+            print('!!! Warning !!!\n'
+                    '\"/\" characters are not allowed in column names!\n'
+                    f'\"{col}\" was changed to \"{columns[i]}\".\n')
+    return((out, '|'.join(columns)))
+
+def get_cell_batch_key(uuid):
+    """Get the batch_key for the cell universal metadata.
+
+    The cell universal metadata schema says that the "batch"
+    column has to have a string stored with it in an HDF5
+    attribute called "batch_key". This method gets that
+    batch_key string.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+
+    Returns:
+        The "batch_key" string stored in the dataset.
+    
+    Raises:
+        AssertionError: If the "batch" column or the
+            "batch_key" attribute doesn't exist.
+    """
+    with ac__.get_h5_conn(uuid) as lfile:
+        if 'batch' not in lfile['col_attrs/'].keys():
+            raise AssertionError('Cell universal metadata doesn\'t have '
+                                 'a \"batch\" column!')
+        if 'batch_key' not in lfile['col_attrs/batch'].attrs.keys():
+            raise AssertionError('Cell universal metadata \"batch\" '
+                                 'column doesn\'t have a \"batch_key\"'
+                                 'attribute!')
+        batch_key = lfile['col_attrs/batch'].attrs['batch_key']
+        return(batch_key)
+
 def get_cell_int_md_univ(uuid, keep_missing = True):
     """Get the cell universal metadata.
 
@@ -382,14 +327,9 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
             If False, they are dropped from the returned DataFrame.
     
     Returns:
-        If there is a "batch_key" attribute for the batch column
-        and the batch column isn't a missing column, then a
-        2-member tuple is returned:
-          1. Pandas DataFrame with the same number of rows as cells
-             in the dataset and where each column is a universal
-             internal metadata field.
-          2. String. The batch_key.
-        If not, just the Pandas DataFrame is returned, not in a tuple.
+        Pandas DataFrame with the same number of rows as cells
+        in the dataset and where each column is a universal
+        internal metadata field.
 
     Raises: None
     """
@@ -397,8 +337,6 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
         col_keys = list(lfile['col_attrs'].keys())
         col_data = pd.DataFrame(index = np.array(lfile['col_attrs/CellID']))
         for key in col_keys:
-            # FLAG
-            # if key == 'author_annot' or key == 'CellID':
             if key == 'CellID':
                 continue
             key_path = 'col_attrs/' + key
@@ -415,14 +353,7 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
             column_order = sorted(col_data.columns,
                                 key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
             col_data = col_data[column_order]
-            batch_key = None
-            if ('batch' in col_data.columns
-                and 'batch_key' in lfile['col_attrs/batch'].attrs.keys()):
-                batch_key = lfile['col_attrs/batch'].attrs['batch_key']
-            if batch_key is not None:
-                return((col_data, batch_key))
-            else:
-                return(col_data)
+            return(col_data)
 
 def get_gene_int_md_univ(uuid, keep_missing = True):
     """Get the gene universal metadata.
@@ -454,8 +385,6 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
         else:
             row_data = pd.DataFrame()
         for key in row_keys:
-            # FLAG
-            # if key == 'author_annot' or key == skip_col:
             if key == skip_col:
                 continue
             key_path = 'row_attrs/' + key
@@ -494,21 +423,15 @@ def get_cell_int_md_author_annot(uuid):
     Raises: None
     """
     with ac__.get_h5_conn(uuid) as lfile:
-        # FLAG
-        # col_keys = list(lfile['col_attrs/author_annot'].keys())
         col_keys = list(lfile['cell_author_annot'].keys())
         col_data = pd.DataFrame(index = np.array(lfile['col_attrs/CellID']))
         for key in col_keys:
-            # FLAG
-            # key_path = 'col_attrs/author_annot/' + key
             key_path = 'cell_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
                 col_data[key] = lfile[key_path][:]
         if col_data.shape[1] == 0:
             col_data = None
         else:
-            # FLAG
-            # col_order = lfile['col_attrs/author_annot'].attrs['column_order'].split('|')
             col_order = lfile['cell_author_annot'].attrs['column_order'].split('|')
             col_data = col_data[col_order]
         return(col_data)
@@ -530,8 +453,6 @@ def get_gene_int_md_author_annot(uuid):
     Raises: None
     """
     with ac__.get_h5_conn(uuid) as lfile:
-        # FLAG
-        # row_keys = list(lfile['row_attrs/author_annot'].keys())
         row_keys = list(lfile['gene_author_annot'].keys())
         if 'Gene' in row_keys:
             row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
@@ -540,16 +461,12 @@ def get_gene_int_md_author_annot(uuid):
         else:
             row_data = pd.DataFrame()
         for key in row_keys:
-            # FLAG
-            # key_path = 'row_attrs/author_annot/' + key
             key_path = 'gene_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
                 row_data[key] = lfile[key_path][:]
         if row_data.shape[1] == 0:
             row_data = None
         else:
-            # FLAG
-            # col_order = lfile['row_attrs/author_annot'].attrs['column_order'].split('|')
             col_order = lfile['gene_author_annot'].attrs['column_order'].split('|')
             row_data = row_data[col_order]
         return(row_data)
@@ -586,55 +503,44 @@ def set_cell_int_md_author_annot(uuid, df):
         # column-key is not None, then it is a pandas Series
         # and it has been overwritten.
         columns_written = {} 
+        column_order = []
         for col in df.columns:
             try:
-                # FLAG
-                # if col in lfile['col_attrs/author_annot'].keys():
-                if col in lfile['cell_author_annot'].keys():
-                    overwrite_col = input(f'Column \"{col}\" already exists!\n'
-                                        'Overwrite? (y/n): ')[0].lower()
-                    if overwrite_col == 'n':
+                if '/' in col:
+                    hdf5_col = re.sub(r'/', r'_', col)
+                    print('!!! Warning !!!\n'
+                          '\"/\" characters are not allowed in column names!\n'
+                         f'\"{col}\" was changed to \"{hdf5_col}\".\n')
+                else:
+                    hdf5_col = col
+                column_order.append(hdf5_col)
+                if hdf5_col in lfile['cell_author_annot'].keys():
+                    overwrite_col = gu__.get_yes_or_no(f'Column \"{hdf5_col}\" '
+                                                        'already exists!\n'
+                                                        'Overwrite? (y/n): ')
+                    if not overwrite_col:
                         continue
                     else:
-                        # FLAG
-                        # columns_written[col] = pd.Series(lfile[f'col_attrs/author_annot/{col}'])
-                        columns_written[col] = pd.Series(lfile[f'cell_author_annot/{col}'])
-                        # FLAG
-                        # del lfile[f'col_attrs/author_annot/{col}']
-                        del lfile[f'cell_author_annot/{col}']
+                        columns_written[hdf5_col] = pd.Series(lfile[f'cell_author_annot/{hdf5_col}'])
+                        del lfile[f'cell_author_annot/{hdf5_col}']
                 if df[col].dtype == object:
-                    # FLAG
-                    # dset = lfile.create_dataset(f'col_attrs/author_annot/{col}',
-                    #                             (lfile['matrix'].shape[1], ),
-                    #                             dtype = h5.string_dtype())
-                    dset = lfile.create_dataset(f'cell_author_annot/{col}',
+                    dset = lfile.create_dataset(f'cell_author_annot/{hdf5_col}',
                                                 (lfile['matrix'].shape[1], ),
                                                 dtype = h5.string_dtype())
-                    if col not in columns_written.keys():
-                        columns_written[col] = None
+                    if hdf5_col not in columns_written.keys():
+                        columns_written[hdf5_col] = None
                     dset[:] = df[col]
                 else:
-                    # FLAG
-                    # dset = lfile.create_dataset(f'col_attrs/author_annot/{col}',
-                    #                             data = df[col])
-                    dset = lfile.create_dataset(f'cell_author_annot/{col}',
+                    dset = lfile.create_dataset(f'cell_author_annot/{hdf5_col}',
                                                 data = df[col])
-                    if col not in columns_written.keys():
-                        columns_written[col] = None
+                    if hdf5_col not in columns_written.keys():
+                        columns_written[hdf5_col] = None
             except:
                 col_warnings = set() 
                 for col_del in columns_written:
                     if columns_written[col_del] is None:
-                        # FLAG
-                        # del lfile[f'col_attrs/author_annot/{col_del}']
                         del lfile[f'cell_author_annot/{col_del}']
                     elif type(columns_written[col_del]) == pd.core.series.Series:
-                        # FLAG
-                        # if col_del in lfile['col_attrs/author_annot'].keys():
-                        #     del lfile[f'col_attrs/author_annot/{col_del}']
-                        # dset = lfile.create_dataset(f'col_attrs/author_annot/{col_del}',
-                        #                             (lfile['matrix'].shape[1], ),
-                        #                             dtype = h5.string_dtype())
                         if col_del in lfile['cell_author_annot'].keys():
                             del lfile[f'cell_author_annot/{col_del}']
                         dset = lfile.create_dataset(f'cell_author_annot/{col_del}',
@@ -646,14 +552,12 @@ def set_cell_int_md_author_annot(uuid, df):
                         print('ERROR: columns_written[\'col_del\'] was not '
                             'None or a pandas Series!')
                             
-                raise RuntimeError(f'Error in writing column \"{col}\"! '
+                raise RuntimeError(f'Error in writing column \"{hdf5_col}\"! '
                                     'Operation aborted. The following '
                                     'columns may have been converted to '
                                     'strings:\n'
                                     '    ' + '\n    '.join(col_warnings))
-        # FLAG
-        # lfile['col_attrs/author_annot'].attrs['column_order'] = '|'.join(df.columns)
-        lfile['cell_author_annot'].attrs['column_order'] = '|'.join(df.columns)
+        lfile['cell_author_annot'].attrs['column_order'] = '|'.join(column_order)
 
 def set_gene_int_md_author_annot(uuid, df):
     """Set the gene author-annotated metadata.
@@ -687,55 +591,44 @@ def set_gene_int_md_author_annot(uuid, df):
         # column-key is not None, then it is a pandas Series
         # and it has been overwritten.
         columns_written = {} 
+        column_order = []
         for col in df.columns:
             try:
-                # FLAG
-                # if col in lfile['row_attrs/author_annot'].keys():
-                if col in lfile['gene_author_annot'].keys():
-                    overwrite_col = input(f'Column \"{col}\" already exists!\n'
-                                        'Overwrite? (y/n): ')[0].lower()
-                    if overwrite_col == 'n':
+                if '/' in col:
+                    hdf5_col = re.sub(r'/', r'_', col)
+                    print('!!! Warning !!!\n'
+                          '\"/\" characters are not allowed in column names!\n'
+                         f'\"{col}\" was changed to \"{hdf5_col}\".\n')
+                else:
+                    hdf5_col = col
+                column_order.append(hdf5_col)
+                if hdf5_col in lfile['gene_author_annot'].keys():
+                    overwrite_col = gu__.get_yes_or_no(f'Column \"{hdf5_col}\" '
+                                                        'already exists!\n'
+                                                        'Overwrite? (y/n): ')
+                    if not overwrite_col:
                         continue
                     else:
-                        # FLAG
-                        # columns_written[col] = pd.Series(lfile[f'row_attrs/author_annot/{col}'])
-                        columns_written[col] = pd.Series(lfile[f'gene_author_annot/{col}'])
-                        # FLAG
-                        # del lfile[f'col_attrs/author_annot/{col}']
-                        del lfile[f'cell_author_annot/{col}']
+                        columns_written[hdf5_col] = pd.Series(lfile[f'gene_author_annot/{hdf5_col}'])
+                        del lfile[f'cell_author_annot/{hdf5_col}']
                 if df[col].dtype == object:
-                    # FLAG
-                    # dset = lfile.create_dataset(f'row_attrs/author_annot/{col}',
-                    #                             (lfile['matrix'].shape[0], ),
-                    #                             dtype = h5.string_dtype())
-                    dset = lfile.create_dataset(f'gene_author_annot/{col}',
+                    dset = lfile.create_dataset(f'gene_author_annot/{hdf5_col}',
                                                 (lfile['matrix'].shape[0], ),
                                                 dtype = h5.string_dtype())
-                    if col not in columns_written.keys():
-                        columns_written[col] = None
+                    if hdf5_col not in columns_written.keys():
+                        columns_written[hdf5_col] = None
                     dset[:] = df[col]
                 else:
-                    # FLAG
-                    # dset = lfile.create_dataset(f'row_attrs/author_annot/{col}',
-                    #                             data = df[col])
-                    dset = lfile.create_dataset(f'gene_author_annot/{col}',
+                    dset = lfile.create_dataset(f'gene_author_annot/{hdf5_col}',
                                                 data = df[col])
-                    if col not in columns_written.keys():
-                        columns_written[col] = None
+                    if hdf5_col not in columns_written.keys():
+                        columns_written[hdf5_col] = None
             except:
                 col_warnings = set() 
                 for col_del in columns_written:
                     if columns_written[col_del] is None:
-                        # FLAG
-                        # del lfile[f'row_attrs/author_annot/{col_del}']
                         del lfile[f'gene_author_annot/{col_del}']
                     elif type(columns_written[col_del]) == pd.core.series.Series:
-                        # FLAG
-                        # if col_del in lfile['row_attrs/author_annot'].keys():
-                        #     del lfile[f'row_attrs/author_annot/{col_del}']
-                        # dset = lfile.create_dataset(f'row_attrs/author_annot/{col_del}',
-                        #                             (lfile['matrix'].shape[1], ),
-                        #                             dtype = h5.string_dtype())
                         if col_del in lfile['gene_author_annot'].keys():
                             del lfile[f'gene_author_annot/{col_del}']
                         dset = lfile.create_dataset(f'gene_author_annot/{col_del}',
@@ -747,14 +640,12 @@ def set_gene_int_md_author_annot(uuid, df):
                         print('ERROR: columns_written[\'col_del\'] was not '
                             'None or a pandas Series!')
                             
-                raise RuntimeError(f'Error in writing column \"{col}\"! '
+                raise RuntimeError(f'Error in writing column \"{hdf5_col}\"! '
                                     'Operation aborted. The following '
                                     'columns may have been converted to '
                                     'strings:\n'
                                     '    ' + '\n    '.join(col_warnings))
-        # FLAG
-        # lfile['row_attrs/author_annot'].attrs['column_order'] = '|'.join(df.columns)
-        lfile['gene_author_annot'].attrs['column_order'] = '|'.join(df.columns)
+        lfile['gene_author_annot'].attrs['column_order'] = '|'.join(column_order)
 
 def set_cell_int_md_univ(uuid, df, batch_key):
     """Set the cell universal metadata.
@@ -802,10 +693,14 @@ def set_cell_int_md_univ(uuid, df, batch_key):
         columns_written = {} 
         for col in df.columns:
             try:
+                if '/' in col:
+                    raise AssertionError('Universal internal metadata column '
+                                         'names may not have \"/\" characters!')
                 if col in lfile['col_attrs'].keys():
-                    overwrite_col = input(f'Column \"{col}\" already exists!\n'
-                                        'Overwrite? (y/n): ')[0].lower()
-                    if overwrite_col == 'n':
+                    overwrite_col = gu__.get_yes_or_no(f'Column \"{col}\" '
+                                                        'already exists!\n'
+                                                        'Overwrite? (y/n): ')
+                    if not overwrite_col:
                         continue
                     else:
                         columns_written[col] = pd.Series(lfile[f'col_attrs/{col}'])
@@ -889,10 +784,14 @@ def set_gene_int_md_univ(uuid, df):
         columns_written = {} 
         for col in df.columns:
             try:
+                if '/' in col:
+                    raise AssertionError('Universal internal metadata column '
+                                         'names may not have \"/\" characters!')
                 if col in lfile['row_attrs'].keys():
-                    overwrite_col = input(f'Column \"{col}\" already exists!\n'
-                                        'Overwrite? (y/n): ')[0].lower()
-                    if overwrite_col == 'n':
+                    overwrite_col = gu__.get_yes_or_no(f'Column \"{col}\" '
+                                                        'already exists!\n'
+                                                        'Overwrite? (y/n): ')
+                    if not overwrite_col:
                         continue
                     else:
                         columns_written[col] = pd.Series(lfile[f'row_attrs/{col}'])
@@ -932,6 +831,207 @@ def set_gene_int_md_univ(uuid, df):
                                     'strings:\n'
                                     '    ' + '\n    '.join(col_warnings))
 
+def get_cell_univ_col_desc(uuid, column):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['col_attrs'].keys():
+            if 'description' in lfile[f'col_attrs/{column}'].attrs.keys():
+                desc = lfile[f'col_attrs/{column}'].attrs['description']
+                if (desc is None) or (desc == ''):
+                    print('No description available!')
+                    return
+                else:
+                    return(desc)
+            else:
+                print('No description available!')
+                return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def get_cell_aa_col_desc(uuid, column):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['cell_author_annot'].keys():
+            if 'description' in lfile[f'cell_author_annot/{column}'].attrs.keys():
+                desc = lfile[f'cell_author_annot/{column}'].attrs['description']
+                if (desc is None) or (desc == ''):
+                    print('No description available!')
+                    return
+                else:
+                    return(desc)
+            else:
+                print('No description available!')
+                return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def get_gene_univ_col_desc(uuid, column):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['row_attrs'].keys():
+            if 'description' in lfile[f'row_attrs/{column}'].attrs.keys():
+                desc = lfile[f'row_attrs/{column}'].attrs['description']
+                if (desc is None) or (desc == ''):
+                    print('No description available!')
+                    return
+                else:
+                    return(desc)
+            else:
+                print('No description available!')
+                return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def get_gene_aa_col_desc(uuid, column):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['gene_author_annot'].keys():
+            if 'description' in lfile[f'gene_author_annot/{column}'].attrs.keys():
+                desc = lfile[f'gene_author_annot/{column}'].attrs['description']
+                if (desc is None) or (desc == ''):
+                    print('No description available!')
+                    return
+                else:
+                    return(desc)
+            else:
+                print('No description available!')
+                return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def set_cell_univ_col_desc(uuid, column, desc):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['col_attrs'].keys():
+            if 'description' in lfile[f'col_attrs/{column}'].attrs.keys():
+                loop = True
+                while loop:
+                    print(f'A description for {column} already exists.')
+                    print('Enter a command:\n'
+                          '    OVERWRITE : Overwrite the existing description\n'
+                          '    CANCEL    : Cancel the operation\n'
+                          '    VIEW      : View the existing description before deciding\n')
+                    print()
+                    user_input = input('> ')
+                    if user_input == 'OVERWRITE':
+                        loop = False
+                    elif user_input == 'CANCEL':
+                        return
+                    elif user_input == 'VIEW':
+                        loop = True
+                        print()
+                        print('\"\"\"')
+                        print(lfile[f'col_attrs/{column}'].attrs['description'])
+                        print('\"\"\"')
+                        print()
+                    else:
+                        loop = True
+                        print('ERROR: Please enter a valid command!')
+                        print()
+            lfile[f'col_attrs/{column}'].attrs['desc'] = desc
+            return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def set_cell_aa_col_desc(uuid, column, desc):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['cell_author_annot'].keys():
+            if 'description' in lfile[f'cell_author_annot/{column}'].attrs.keys():
+                # Ask for overwrite
+                loop = True
+                while loop:
+                    print(f'A description for {column} already exists.')
+                    print('Enter a command:\n'
+                          '    OVERWRITE : Overwrite the existing description\n'
+                          '    CANCEL    : Cancel the operation\n'
+                          '    VIEW      : View the existing description before deciding\n')
+                    print()
+                    user_input = input('> ')
+                    if user_input == 'OVERWRITE':
+                        loop = False
+                    elif user_input == 'CANCEL':
+                        return
+                    elif user_input == 'VIEW':
+                        loop = True
+                        print()
+                        print('\"\"\"')
+                        print(lfile[f'cell_author_annot/{column}'].attrs['description'])
+                        print('\"\"\"')
+                        print()
+                    else:
+                        loop = True
+                        print('ERROR: Please enter a valid command!')
+                        print()
+            # Write the description
+            lfile[f'cell_author_annot/{column}'].attrs['desc'] = desc
+            return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def set_gene_univ_col_desc(uuid, column, desc):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['row_attrs'].keys():
+            if 'description' in lfile[f'row_attrs/{column}'].attrs.keys():
+                # Ask for overwrite
+                loop = True
+                while loop:
+                    print(f'A description for {column} already exists.')
+                    print('Enter a command:\n'
+                          '    OVERWRITE : Overwrite the existing description\n'
+                          '    CANCEL    : Cancel the operation\n'
+                          '    VIEW      : View the existing description before deciding\n')
+                    print()
+                    user_input = input('> ')
+                    if user_input == 'OVERWRITE':
+                        loop = False
+                    elif user_input == 'CANCEL':
+                        return
+                    elif user_input == 'VIEW':
+                        loop = True
+                        print()
+                        print('\"\"\"')
+                        print(lfile[f'row_attrs/{column}'].attrs['description'])
+                        print('\"\"\"')
+                        print()
+                    else:
+                        loop = True
+                        print('ERROR: Please enter a valid command!')
+                        print()
+            # Write the description
+            lfile[f'row_attrs/{column}'].attrs['desc'] = desc
+            return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def set_gene_aa_col_desc(uuid, column, desc):
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['gene_author_annot'].keys():
+            if 'description' in lfile[f'gene_author_annot/{column}'].attrs.keys():
+                # Ask for overwrite
+                loop = True
+                while loop:
+                    print(f'A description for {column} already exists.')
+                    print('Enter a command:\n'
+                          '    OVERWRITE : Overwrite the existing description\n'
+                          '    CANCEL    : Cancel the operation\n'
+                          '    VIEW      : View the existing description before deciding\n')
+                    print()
+                    user_input = input('> ')
+                    if user_input == 'OVERWRITE':
+                        loop = False
+                    elif user_input == 'CANCEL':
+                        return
+                    elif user_input == 'VIEW':
+                        loop = True
+                        print()
+                        print('\"\"\"')
+                        print(lfile[f'gene_author_annot/{column}'].attrs['description'])
+                        print('\"\"\"')
+                        print()
+                    else:
+                        loop = True
+                        print('ERROR: Please enter a valid command!')
+                        print()
+            # Write the description
+            lfile[f'gene_author_annot/{column}'].attrs['desc'] = desc
+            return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
 
 def main():
     pass
