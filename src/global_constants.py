@@ -209,8 +209,7 @@ _IMU_CELL_COLUMN_DESCRIPTIONS = {
             '04. Source Organism\n'
             '    The specific organism of origin. For example, if cells\n'
             '    from multiple mice were pooled, the original mouse ID\n'
-            '    should be stored here. This is a mapping from non-negative\n'
-            '    integers to descriptions in the HDF5 attribute \"desc\".\n'
+            '    should be stored here.\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
             '    is not missing, but is invalid, it is designated with \"OTHER\"'
@@ -224,22 +223,22 @@ _IMU_CELL_COLUMN_DESCRIPTIONS = {
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
             '    is not missing, but is invalid, it is designated with \"OTHER\"'
         ),
-    'batch':
+    'condition':
         (
-            '06. Batch\n'
-            '    Any batch variable not covered by source_organism, sex, or\n'
-            '    condition. If there are multiple batch variables remaining,\n'
-            '    they should be \"|\"-concatenated to form all possible\n'
-            '    combinations.\n'
+            '06. Condition\n'
+            '    The experimental or disease condition of the cell. If they are\n'
+            '    healthy, untreated cells, this value should be \"0\".\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
             '    is not missing, but is invalid, it is designated with \"OTHER\"'
         ),
-    'condition':
+    'batch':
         (
-            '07. Condition\n'
-            '    The experimental or disease condition of the cell. If they are\n'
-            '    healthy, untreated cells, this value should be \"0\".\n'
+            '07. Batch\n'
+            '    Any batch variable not covered by source_organism, sex, or\n'
+            '    condition. If there are multiple batch variables remaining,\n'
+            '    they should be \"|\"-concatenated to form all possible\n'
+            '    combinations.\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
             '    is not missing, but is invalid, it is designated with \"OTHER\"'
@@ -260,8 +259,8 @@ _IMU_CELL_COLUMN_INDEX = {
     'tissue'         : 2,
     'source_organism': 3,
     'sex'            : 4,
-    'batch'          : 5,
-    'condition'      : 6,
+    'condition'      : 5,
+    'batch'          : 6,
     'uuid'           : 7
 }
 
@@ -271,8 +270,8 @@ _IMU_CELL_COLUMN_MANDATORY = {
     'tissue'         : False,
     'source_organism': False,
     'sex'            : False,
-    'batch'          : False,
     'condition'      : False,
+    'batch'          : False,
     'uuid'           : True
 }
 
