@@ -9,7 +9,7 @@ import h5py as h5
 import general_utils as gu__
 import global_constants as GC
 
-def create_loom_file(file_path, expr_matrix, barcodes, features,
+def create_loom_file(folder_path, expr_matrix, barcodes, features,
                      feat_acc = True):
     """Creates a loom file.
 
@@ -19,8 +19,10 @@ def create_loom_file(file_path, expr_matrix, barcodes, features,
     the HDF5 groups for the author-annotated internal metadata.
 
     Args:
-        file_path: String. A full path, including the file
-            name, of the new loom file. e.g. path/to/new_file.loom
+        folder_path: String. A full path to the folder where
+            the new loom file will be stored.
+            e.g. "path/to/folder"
+            NOT  "path/to/folder/file.loom"
         expr_matrix: The actual expression matrix. Can be a
             numpy.ndarray, or any of these scipy sparse matrices:
                 * scipy.sparse.coo_matrix
@@ -44,6 +46,9 @@ def create_loom_file(file_path, expr_matrix, barcodes, features,
     Returns: None
     Raises: None
     """
+    if not os.path.exists(folder_path):
+        raise FileNotFoundError(f'{folder_path} doesn\'t exist!')
+    file_path = os.path.join(folder_path, 'expr_mat.loom')
     if os.path.exists(file_path):
         raise FileExistsError(f'{file_path} already exists!')
     col_attrs = {'CellID': barcodes}
@@ -57,24 +62,9 @@ def create_loom_file(file_path, expr_matrix, barcodes, features,
         print('\nERROR: Dataset too large to create a loom file!\n')
         sys.exit(1)
     with h5.File(file_path, 'r+') as lfile:
-
         # Add edits to the loom file specification
-        # FLAG
-        # lfile.create_group("col_attrs/author_annot")
-        # lfile.create_group("row_attrs/author_annot")
-        lfile.create_group("cell_author_annot")
-        lfile.create_group("gene_author_annot")
-
-    # I'm not sure if I want to keep this. This pre-creates the
-    # universal internal metadata fields as empty HDF5 datasets.
-    # 
-    # n_col = lfile['matrix'].shape[1]
-    # # Universal Internal Metadata fields in correct order
-    # univ_fields = [item[0] for item in sorted(GC._IMU_COLUMN_INDEX.items(),
-    #                                           key = lambda x: x[1])]
-    # for field in univ_fields:
-    #     lfile.create_dataset(f'col_attrs/{field}', shape = (n_col, ))
-
+        lfile.create_group('cell_author_annot')
+        lfile.create_group('gene_author_annot')
 
 def get_expr_matrix_from_cellranger(path, prefix):
     """Gets expression matrix, barcodes, features from Cell Ranger.
