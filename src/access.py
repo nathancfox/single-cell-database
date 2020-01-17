@@ -342,6 +342,54 @@ def get_column_description(uuid, column, var = 'cell', metadata = 'universal'):
     else:
         raise ValueError('metadata must be \"universal\" or \"author_annot\"!')
 
+def get_expr_mat(uuid, matrix = 'matrix'):
+    """Get an expression matrix as a numpy array.
+
+    From the given dataset, extract an expression matrix from it
+    as a numpy array.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        matrix: String. The name of the desired expression matrix.
+            Must be 'matrix' or the name of an expression matrix
+            under lfile['layers/'].
+        
+    Returns:
+        A numpy array containing the expression matrix.
+        Genes are rows, and cells are columns.
+
+    Raises:
+        ValueError: If the requested matrix does not exist.
+    """
+    with get_h5_conn(uuid) as lfile:
+        if matrix == 'matrix':
+            mat = np.array(lfile['matrix'])
+        else:
+            if matrix not in lfile['layers'].keys():
+                raise ValueError('matrix must be \"matrix\" or a '
+                                 'valid layer name!')
+            else:
+                mat = np.array(lfile[f'layers/{matrix}'])
+        return(mat)
+
+def get_batch_key(uuid):
+    """Get the batch_key from a dataset.
+
+    This is a wrapper around internal_metadata.get_cell_batch_key()
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+
+    Returns:
+        The "batch_key" string stored in the dataset.
+    
+    Raises:
+        AssertionError: If the "batch" column or the
+            "batch_key" attribute doesn't exist.
+    """
+    batch_key = im__.get_cell_batch_key(uuid)
+    return(batch_key)
+
 def main():
     pass
 
