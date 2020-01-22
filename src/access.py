@@ -10,7 +10,7 @@ UUID.
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
 import sys
-sys.path.append('/home/nfox/projects/single_cell_database/src')
+sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import os
 import h5py as h5
 import loompy as lp

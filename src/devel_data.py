@@ -6,7 +6,7 @@ data for development.
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
 import sys
-sys.path.append('/home/nfox/projects/single_cell_database/src')
+sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import pandas as pd
 import datetime as dt
 import geo_access as ga__
