@@ -1,3 +1,11 @@
+"""Helper functions that are generally helpful.
+
+These are utility helper functions that are not specific to this
+database project. These could be useful in other projects and
+are generally unrelated to each other.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import datetime as dt
@@ -97,6 +105,8 @@ def pretty_str_list(list, width = 50, indent = '',
     line. Unlike pprint, this method does not quote or
     annotate items in any way. This makes it better for
     printing lists for display, rather than for examination.
+    Will produce unexpected behavior if the string version
+    of a list element contains a new line character.
     
     For example:
         >>> test = ['apple', 'banana', 'cherry', 'date',
@@ -116,14 +126,6 @@ def pretty_str_list(list, width = 50, indent = '',
             date, elderberry, fig,
             grapefruit
 
-    Building a string in a loop via concatenation is bad practice.
-    Any operations that add to the end of the pretty string are
-    done by adding substrings to a list, then joining at the end.
-    This operation takes linear time, rather than quadratic.
-    However, string concatenations that take place on a single
-    item, such as adding the ", " are left as string concatenations
-    for clarity, since they do not involve the main pretty string.
-
     Args:
         list: The list to convert into a pretty string. Items are
             automatically converted to their string representation,
@@ -131,7 +133,7 @@ def pretty_str_list(list, width = 50, indent = '',
             strings.
         width: Integer. The maximum character width of each line,
             including the indent.
-        indent: A string to preprend to each line. For example, to
+        indent: A string to prepend to each line. For example, to
             indent the whole output, use '    ' (4 whitespaces).
         one_per_line: Boolean. If True, all elements will be printed
             on their own lines, without commas, regardless of
@@ -144,6 +146,14 @@ def pretty_str_list(list, width = 50, indent = '',
 
     Raises: None
     """    
+    # Building a string in a loop via concatenation is bad practice.
+    # Any operations that add to the end of the pretty string are
+    # done by adding substrings to a list, then joining at the end.
+    # This operation takes linear time, rather than quadratic.
+    # However, string concatenations that take place on a single
+    # item, such as adding the ", " are left as string concatenations
+    # for clarity, since they do not involve the main pretty string.
+
     line_counter = 0 
     line_width = 0 
     str_out = []

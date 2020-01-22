@@ -1,20 +1,10 @@
-"""
-README
-------
+"""Functions to manage the external metadata.
 
-All global constants are stored in the global_constants.py file.
+Functions to read, write, and manage the external metadata file
+for the database. Does not actually store the location of the
+external metadata file. This is stored in global_constants.py.
 
-The external metadata file is a text, tab-separated-value file
-located at the global constant: _PATH_TO_METADATA.
-
-Column details can be seen in the global constant 
-dictionary: _EM_COLUMN_DESCRIPTIONS
-
-Mandatory columns are indicated in the global
-constant dictionary: _EM_COLUMN_MANDATORY
-
-Column names in the actual file should be all lowercase, all
-alphanumeric, and with spaces replaced with underscores.
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
@@ -54,7 +44,7 @@ def append_row(new_row):
                 f.write('\t')
 
 def get_new_row_input(pre_fill = None):
-    """Get new entry from user.
+    """Gets new entry from user.
 
     Provides a command line, interactive interface to
     collect the values of a new entry from the user.
@@ -75,6 +65,7 @@ def get_new_row_input(pre_fill = None):
     Raises:
         AssertionError: If any element of the returned
                         list did not get edited.
+        ValueError: If pre_fill doesn't match expectations.
     """
     intro_text = (
                    '\n'
@@ -197,7 +188,7 @@ def get_new_row_input(pre_fill = None):
     return(new_vals)
 
 def write_header():
-    """Write header of new external metadata file."""
+    """Writes header of new external metadata file."""
     if os.path.exists(GC._PATH_TO_METADATA):
         raise AssertionError(f'{GC._PATH_TO_METADATA} already exists!')
     indices = pd.DataFrame({'keys': list(GC._EM_COLUMN_INDEX.keys()),
@@ -211,7 +202,7 @@ def write_header():
                 f.write('\t')
 
 def write_new_file(df):
-    """Write dataframe to file.
+    """Writes dataframe to file.
 
     Overwrites the existing external metadata file with
     the given dataframe.
@@ -238,7 +229,7 @@ def get_as_dataframe():
     return(df)
 
 def get_shape():
-    """Get shape of external metadata."""
+    """Gets shape of external metadata."""
     df = pd.read_csv(GC._PATH_TO_METADATA,
                      sep = '\t',
                      header = 0,
@@ -246,13 +237,13 @@ def get_shape():
     return(df.shape)
 
 def get_column_names():
-    """Get list of column names of external metadata."""
+    """Gets list of column names of external metadata."""
     header = pd.read_csv(GC._PATH_TO_METADATA, sep = '\t', header = None, nrows = 1)
     header = list(header.iloc[0])
     return(header)
 
 def uuid_to_row(uuid_key, columns = None):
-    """Get values of a row, indexed by UUID.
+    """Gets values of a row, indexed by UUID.
 
     Given a certain UUID, retrieves that row from
     the external metadata and returns the requested
@@ -267,7 +258,7 @@ def uuid_to_row(uuid_key, columns = None):
         uuid_key: String. UUID used to look up the
             row requested. Must be in the 32 hexadecimal
             digits format created by str(uuid), where
-            uuid is a python uuid.UUID class.
+            uuid is a Python uuid.UUID class.
             e.g. "12345678-1234-5678-1234-567812345678"
         columns: list of strings. Each string should be
             a column from the external metadata file
@@ -275,7 +266,7 @@ def uuid_to_row(uuid_key, columns = None):
             the entire row will be returned.
     
     Returns:
-        pandas Series containing the values requested
+        Pandas Series containing the values requested
         that correspond to the uuid_key. Index should
         be the columns variable, if passed. Otherwise,
         will be the columns of the dataframe.

@@ -1,3 +1,12 @@
+"""Functions to parse expression data into a new loom file.
+
+The main function is create_loom_file(). This creates a new
+loom file for a new entry from a standard set of arguments.
+All other functions exist to create that standard set of
+arguments from a variety of expression data formats.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import os
@@ -44,7 +53,10 @@ def create_loom_file(folder_path, expr_matrix, barcodes, features,
             'Gene', and this argument should be False.
     
     Returns: None
-    Raises: None
+
+    Raises:
+        FileNotFoundError: If the passed folder does not exist.
+        FileExistsError: If the expr_mat.loom file already exists.
     """
     if not os.path.exists(folder_path):
         raise FileNotFoundError(f'{folder_path} doesn\'t exist!')
@@ -137,7 +149,6 @@ def get_expr_matrix_from_cellranger(path, prefix):
     features = np.array(features_df.iloc[:, 0])
     barcodes_df = pd.read_csv(barcode_file, sep = '\t', header = None)
     barcodes = np.array(barcodes_df.iloc[:, 0])
-
     return(mat, barcodes, features)
 
 def get_expr_matrix_from_csv(path, rows = 'genes', **kwargs):
@@ -161,7 +172,8 @@ def get_expr_matrix_from_csv(path, rows = 'genes', **kwargs):
             2. A numpy ndarray holding the barcodes
             3. A numpy ndarray holding the features
     
-    Raises: None
+    Raises:
+        ValueError: If the rows argument isn't "genes" or "cells"
     """
     df = pd.read_csv(path, **kwargs)
     if rows == 'cells':

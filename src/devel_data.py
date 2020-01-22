@@ -1,3 +1,10 @@
+"""Functions to scrape data for development.
+
+Interacts with Valentine Svensson's database to create
+data for development.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import pandas as pd

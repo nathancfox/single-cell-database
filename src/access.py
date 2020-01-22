@@ -1,3 +1,14 @@
+"""Abstracted access functions to the database.
+
+A collection of functions that provide access to the
+database with minimal knowledge of the inner workings.
+In general, the external metadata can be gotten with
+0 prior knowledge, which can be parsed for the desired
+UUID(s). All the other access functions only require a
+UUID.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import os

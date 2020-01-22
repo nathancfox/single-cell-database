@@ -1,3 +1,58 @@
+"""A collection of global constants.
+
+This is a collection of global constants that reflect the schema
+of the database implementation. These SHOULD NOT be edited in any
+code throughout the entire project. This is intended as a reference
+for all other Python code in the project.
+
+NOTE: These constants are Python-readable, but are not directly
+referenced by the R access functions. Some of them are mirrored
+manually in the access.R script. They should always be up-to-date
+with the constants here.
+
+Descriptions
+============
+
+_PATH_TO_DATABASE:
+    The full, absolute path to the root folder of the database.
+_PATH_TO_METADATA:
+    The full, absolute path to the external metadata file.
+_EM_COLUMN_DESCRIPTIONS:
+    A dict holding printable descriptions for each of the columns
+    in the external metadata schema.
+_EM_COLUMN_INDEX:
+    A dict holding the 0-based index for each column in the external
+    metadata schema, indicating column order.
+_EM_COLUMN_MANDATORY:
+    A dict holding a boolean for each column in the external metadata
+    schema, indicating whether or not the column is mandatory.
+_IMU_CELL_COLUMN_DESCRIPTIONS:
+    A dict holding printable descriptions for each of the columns
+    in the internal universal cell-specific metadata schema.
+_IMU_CELL_COLUMN_INDEX:
+    A dict holding the 0-based index for each column in the internal
+    universal cell-specific metadata schema, indicating column order.
+_IMU_CELL_COLUMN_MANDATORY:
+    A dict holding a boolean for each column in the internal universal
+    cell-specific metadata schema, indicating whether or not the
+    column is mandatory.
+_IMU_GENE_COLUMN_DESCRIPTIONS:
+    A dict holding printable descriptions for each of the columns
+    in the internal universal gene-specific metadata schema.
+_IMU_GENE_COLUMN_INDEX:
+    A dict holding the 0-based index for each column in the internal
+    universal gene-specific metadata schema, indicating column order.
+_IMU_GENE_COLUMN_MANDATORY:
+    A dict holding a boolean for each column in the internal universal
+    gene-specific metadata schema, indicating whether or not the
+    column is mandatory.
+_TISSUE_LIST:
+    A dict of lists, holding the list of tissues used in the tissue
+    metadata fields. Each list is named an organ system category
+    and holds the tissue names relevant to it.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 # These 2 are mirrored in the access.R file.
 # If you ever change these, MAKE SURE TO UPDATE
 # THE ONES IN THE access.R FILE!

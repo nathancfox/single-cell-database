@@ -1,3 +1,11 @@
+"""Functions to scrape GEO Series data.
+
+Functions that enable easy scraping of GEO Series data and
+metadata. Also contains some unused, outdated functions
+related to building a new folder and creating log files.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import os
@@ -155,10 +163,10 @@ def get_series_suppl_files(gse_id, path):
                        f'--no-directories -P {path} \"{ftp_url}\"')
     bash_gunzip_script = (f'gunzip {path}*gz')
     if os.path.exists('get_series_suppl_file_temp.sh'):
-        sys.exit(('File \"get_series_suppl_file_temp.sh\" already exists'
-                  ' and will be overwritten by a temp file created by'
-                  ' this method. Please rename it to something else'
-                  ' to save it.'))
+        raise FileExistsError('File \"get_series_suppl_file_temp.sh\" '
+                              'already exists and will be overwritten by '
+                              'a temp file created by this method. Please '
+                              'rename it to something else to save it.')
     with open('get_series_suppl_file_temp.sh', 'w') as f:
         f.write(bash_curl_script)
         f.write('\n')
@@ -184,12 +192,9 @@ def build_new_entry_folder(path):
                the new directory.
             2. The path to the new directory.
     
-    Raises:
-        FileExistsError: Raised if the directory already exists.
+    Raises: None
     """
     new_id = gu__.get_uuid()
-    # Will raise a FileExistsError if the directory
-    # already exists.
     os.mkdir(os.path.join(path, new_id))
     return((new_id, os.path.join(path, new_id) + '/'))
 
@@ -380,6 +385,8 @@ def get_sample_char_from_soft(soft_file):
                     'strain/background': 'CD-1',
                     'genotype/variation': 'wild type'
                 }}
+
+    Raises: None
     """
     with open(soft_file, 'r') as f:
         samples = {}

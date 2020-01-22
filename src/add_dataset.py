@@ -1,3 +1,12 @@
+"""High-level functions to add a new dataset.
+
+Very high-level functions that consolidate all the helper functions
+needed to add a new dataset to the database. Also provides easy
+access to some resources like a suggested workflow or internal
+metadata schema details.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import os
@@ -12,6 +21,7 @@ _gse_id = ''
 _new_uuid = ''
 
 def print_workflow():
+    """Prints the workflow to add a new dataset."""
     workflow = (
                  '01. ad__.set_new_entry(gse_id)\n'
                  '02. ad__.download_files()\n'
@@ -29,6 +39,7 @@ def print_workflow():
     print(workflow)
 
 def print_tissue_list():
+    """Prints the Tissue List."""
     print()
     for k, v in GC._TISSUE_LIST.items():
         print(f'{k}')
@@ -37,6 +48,27 @@ def print_tissue_list():
         print()
 
 def print_imu(*args):
+    """Prints the internal universal cell-specific metadata schema.
+
+    Provides information about the internal universal cell-specific
+    metadata. If called with no arguments, a list of columns is
+    printed. If called with arguments, should be a list of columns
+    or multiple arguments (one per column name). These columns will
+    be printed with full descriptions.
+
+    Args:
+        *args: 0 or more positional arguments. Can be column names
+            or must be a single list of column names.
+    
+    Returns:
+        If 0 arguments, a list of columns is printed. If 1 argument
+        and the argument is a list of column names, those columns
+        are printed with their full descriptions. If 1 or more
+        arguments and those arguments are column names, those
+        columns are printed with their full descriptions.
+
+    Raises: None
+    """
     if len(args) == 0:
         column_order = sorted(list(GC._IMU_CELL_COLUMN_INDEX.keys()),
                               key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
@@ -59,6 +91,16 @@ def print_imu(*args):
             print()
 
 def setup():
+    """Takes care of the first few steps of a new entry.
+
+    Interface for getting started on a new entry from a GEO Series.
+    Automatically takes care of the first few steps, and prints
+    the remaining steps.
+
+    Args: None
+    Returns: None
+    Raises: None
+    """
     print('Add a New Dataset to the Single-Cell Database')
     print('=============================================')
     print('GEO Series ID:')
@@ -86,18 +128,30 @@ def setup():
     print()
 
 def set_new_entry(new_gse_id):
+    """Sets global constants and generate a UUID."""
     global _gse_id
     global _new_uuid
     _gse_id = new_gse_id
     _new_uuid = ''
 
 def download_files():
+    """Downloads GEO files for a new entry."""
     global _new_uuid
     _new_uuid = ga__.download_series_to_db(_gse_id,
                                            GC._PATH_TO_DATABASE,
                                            log = False)
 
 def add_external_metadata():
+    """Gets a new entry's external metadata.
+
+    Robust wrapper around external_metadata.get_new_row_input()
+    that provides stable getting of a new entry's external
+    metadata and stores it in the external metadata file.
+
+    Args: None
+    Returns: None
+    Raises: None
+    """
     global _gse_id
     global _new_uuid
     if _new_uuid == '':

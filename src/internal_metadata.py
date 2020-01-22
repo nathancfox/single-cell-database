@@ -1,3 +1,11 @@
+"""Functions to manage the internal metadata.
+
+Functions to read, write, and manage the internal metadata
+of the database. This includes both cell-specific and
+gene-specific universal and author-annotated internal metadata.
+
+LICENSE: GNU General Public License v3.0 (see LICENSE file)
+"""
 import sys
 sys.path.append('/home/nfox/projects/single_cell_database/src')
 import numpy as np
@@ -17,14 +25,14 @@ import general_utils as gu__
 # def construct_default_mapping(column, zero_value = None,
 #                               batch = False):
 #     """Construct a mapping for a universal metadata field.
-
+# 
 #     Given a list of values, convert the list to a list
 #     of integers, mapped to the original set of unique
 #     values. Also return the array of strings to be
 #     set as the HDF5 attribute for this HDF5 dataset.
 #     See the internal universal metadata specification
 #     for details.
-
+# 
 #     Args:
 #         column: List-like object. List of values to be
 #             converted to a mapping. Must be convertable
@@ -35,13 +43,13 @@ import general_utils as gu__
 #         batch: If True, handles the case where column is
 #             the 'batch' column and there are multiple
 #             '|'-delimited fields inside the mapping.
-    
+#
 #     Returns:
 #         A 2-member tuple. The first member is the original list
 #         with the values replaced by their corresponding integers.
 #         The second member is an array of mappings from the integers
 #         to their descriptions.
-
+#
 #     Raises: None
 #     """
 #     column = pd.Series(column) 
@@ -66,13 +74,13 @@ import general_utils as gu__
 #         mapping_key.append(f'{k}:{rev_mapping_dict[k]}')
 #     mapping_key = np.array(mapping_key)
 #     return((mapping, mapping_key)) 
-
+#
 # def construct_interactive_mapping(column, batch = False):
 #     """Run an interactive constructor for a universal metadata mapping.
-
+#
 #     Run an interactive input application for constructing an
 #     internal universal metadata mapping.
-
+#
 #     Args:
 #         column: List-like object. List of values to be
 #             converted to a mapping. Must be convertable
@@ -80,13 +88,13 @@ import general_utils as gu__
 #         batch: If True, handles the case where column is
 #             the 'batch' column and there are multiple
 #             '|'-delimited fields inside the mapping.
-    
+#    
 #     Returns:
 #         A 2-member tuple. The first member is the original list
 #         with the values replaced by their corresponding integers.
 #         The second member is an array of mappings from the integers
 #         to their descriptions.
-
+#
 #     Raises: None
 #     """
 #     column = pd.Series(column) 
@@ -227,10 +235,10 @@ import general_utils as gu__
 #     # if 'FILL_ME_IN' in mapping_key.values():
 #     #     raise AssertionError('At least one value did not get a DESCRIPTION!')
 #     return((mapping, mapping_key))
-                
+#                
 # def construct_mapping(column, zero_value = None, mode = 'default')
 #     """Construct a mapping for an internal universal metadata column.
-
+#
 #     Acts as a router method to one of the two helper methods
 #     with appropriate arguments selected.
 #     """
@@ -249,7 +257,7 @@ import general_utils as gu__
 #                          '\"batch_interactive\"]')
 
 def construct_batch(df, columns):
-    """Construct a universal internal metadata batch field.
+    """Constructs a universal internal metadata batch field.
 
     Given a dataframe and a list of columns in that dataframe,
     concatenate the values to construct a 'batch' column
@@ -315,14 +323,14 @@ def get_cell_batch_key(uuid):
         return(batch_key)
 
 def get_cell_int_md_univ(uuid, keep_missing = True):
-    """Get the cell universal metadata.
+    """Gets the cell universal metadata.
 
     Get the cell universal metadata from the given dataset
     as a Pandas DataFrame. 
 
     Args:
         uuid: String. UUID of the desired dataset
-        keep_missing: bool. If True, missing columns will
+        keep_missing: Boolean. If True, missing columns will
             be retained as columns of all -1 or "-1".
             If False, they are dropped from the returned DataFrame.
     
@@ -356,9 +364,9 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
             return(col_data)
 
 def get_gene_int_md_univ(uuid, keep_missing = True):
-    """Get the gene universal metadata.
+    """Gets the gene universal metadata.
 
-    Get the gene universal metadata from the given dataset
+    Gets the gene universal metadata from the given dataset
     as a Pandas DataFrame. 
 
     Args:
@@ -407,9 +415,9 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
         return(row_data)
 
 def get_cell_int_md_author_annot(uuid):
-    """Get the cell author-annotated metadata.
+    """Gets the cell author-annotated metadata.
 
-    Get the cell author-annotated metadata from the given
+    Gets the cell author-annotated metadata from the given
     dataset as a Pandas DataFrame.
 
     Args:
@@ -437,9 +445,9 @@ def get_cell_int_md_author_annot(uuid):
         return(col_data)
 
 def get_gene_int_md_author_annot(uuid):
-    """Get the gene author-annotated metadata.
+    """Gets the gene author-annotated metadata.
 
-    Get the gene author-annotated metadata from the given
+    Gets the gene author-annotated metadata from the given
     dataset as a Pandas DataFrame.
 
     Args:
@@ -472,9 +480,9 @@ def get_gene_int_md_author_annot(uuid):
         return(row_data)
 
 def set_cell_int_md_author_annot(uuid, df):
-    """Set the cell author-annotated metadata.
+    """Sets the cell author-annotated metadata.
 
-    Set the cell author-annotated metadata for a given dataset
+    Sets the cell author-annotated metadata for a given dataset
     from a Pandas DataFrame. Confirmation must be given
     before overwriting existing columns. Additionally, the method
     will attempt to undo all of its edits and exit gracefully
@@ -489,6 +497,7 @@ def set_cell_int_md_author_annot(uuid, df):
     Returns: None
 
     Raises:
+        AssertionError: If df has the wrong number of rows.
         RuntimeError: If anything went wrong during the writing
             process. The method attempts to undo all of the
             edits it made before throwing this error.
@@ -560,9 +569,9 @@ def set_cell_int_md_author_annot(uuid, df):
         lfile['cell_author_annot'].attrs['column_order'] = '|'.join(column_order)
 
 def set_gene_int_md_author_annot(uuid, df):
-    """Set the gene author-annotated metadata.
+    """Sets the gene author-annotated metadata.
 
-    Set the gene author-annotated metadata for a given dataset
+    Sets the gene author-annotated metadata for a given dataset
     from a Pandas DataFrame. Confirmation must be given
     before overwriting existing columns. Additionally, the method
     will attempt to undo all of its edits and exit gracefully
@@ -577,6 +586,7 @@ def set_gene_int_md_author_annot(uuid, df):
     Returns: None
 
     Raises:
+        AssertionError: If df has the wrong number of rows.
         RuntimeError: If anything went wrong during the writing
             process. The method attempts to undo all of the
             edits it made before throwing this error.
@@ -648,9 +658,9 @@ def set_gene_int_md_author_annot(uuid, df):
         lfile['gene_author_annot'].attrs['column_order'] = '|'.join(column_order)
 
 def set_cell_int_md_univ(uuid, df, batch_key):
-    """Set the cell universal metadata.
+    """Sets the cell universal metadata.
 
-    Set the cell universal metadata for a given dataset
+    Sets the cell universal metadata for a given dataset
     from a Pandas DataFrame. Confirmation must be given
     before overwriting existing columns. Additionally, the method
     will attempt to undo all of its edits and exit gracefully
@@ -671,18 +681,21 @@ def set_cell_int_md_univ(uuid, df, batch_key):
     Returns: None
 
     Raises:
+        AssertionError: If df has the wrong number of rows, or if
+            df has invalid columns. Also if column names have
+            an invalid character.
         RuntimeError: If anything went wrong during the writing
             process. The method attempts to undo all of the
             edits it made before throwing this error.
     """
     with ac__.get_h5_conn(uuid, write = True) as lfile:
         if df.shape[0] != lfile['matrix'].shape[1]:
-            raise ValueError('df has the wrong number of rows!')
+            raise AssertionError('df has the wrong number of rows!')
         test_cols = np.array(df.columns)
         if not np.isin(test_cols, np.array(list(GC._IMU_CELL_COLUMN_INDEX.keys()))).all():
-            raise ValueError('df has invalid columns!')
+            raise AssertionError('df has invalid columns!')
         if np.unique(test_cols).shape[0] != df.columns.shape[0]:
-            raise ValueError('df has non-unique columns!')
+            raise AssertionError('df has non-unique columns!')
         del test_cols
         # Keys are the columns
         # If a column was deleted to be overwritten, it is backed
@@ -743,9 +756,9 @@ def set_cell_int_md_univ(uuid, df, batch_key):
                                     '    ' + '\n    '.join(col_warnings))
 
 def set_gene_int_md_univ(uuid, df):
-    """Set the gene universal metadata.
+    """Sets the gene universal metadata.
 
-    Set the gene universal metadata for a given dataset
+    Sets the gene universal metadata for a given dataset
     from a Pandas DataFrame. Confirmation must be given
     before overwriting existing columns. Additionally, the method
     will attempt to undo all of its edits and exit gracefully
@@ -762,18 +775,21 @@ def set_gene_int_md_univ(uuid, df):
     Returns: None
 
     Raises:
+        AssertionError: If df has the wrong number of rows, or if
+            df has invalid columns. Also if column names have
+            an invalid character.
         RuntimeError: If anything went wrong during the writing
             process. The method attempts to undo all of the
             edits it made before throwing this error.
     """
     with ac__.get_h5_conn(uuid, write = True) as lfile:
         if df.shape[0] != lfile['matrix'].shape[0]:
-            raise ValueError('df has the wrong number of rows!')
+            raise AssertionError('df has the wrong number of rows!')
         test_cols = np.array(df.columns)
         if not np.isin(test_cols, np.array(list(GC._IMU_GENE_COLUMN_INDEX.keys()))).all():
-            raise ValueError('df has invalid columns!')
+            raise AssertionError('df has invalid columns!')
         if np.unique(test_cols).shape[0] != df.columns.shape[0]:
-            raise ValueError('df has non-unique columns!')
+            raise AssertionError('df has non-unique columns!')
         del test_cols
         # Keys are the columns
         # If a column was deleted to be overwritten, it is backed
@@ -832,6 +848,23 @@ def set_gene_int_md_univ(uuid, df):
                                     '    ' + '\n    '.join(col_warnings))
 
 def get_cell_univ_col_desc(uuid, column):
+    """Gets the description attribute for a cell universal column.
+
+    For a given column in the internal cell-specific universal
+    metadata, get the "description" attribute, if available.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal cell-specific
+            universal metadata column.
+
+    Returns:
+        The description if available. Otherwise a warning is printed
+        and None is returned.
+
+    Raises:
+        ValueError: If column does not exist.
+    """
     with ac__.get_h5_conn(uuid) as lfile:
         if column in lfile['col_attrs'].keys():
             if 'description' in lfile[f'col_attrs/{column}'].attrs.keys():
@@ -848,6 +881,23 @@ def get_cell_univ_col_desc(uuid, column):
             raise ValueError(f'\"{column}\" is not a valid column!')
 
 def get_cell_aa_col_desc(uuid, column):
+    """Gets the description attribute for a cell author_annot column.
+
+    For a given column in the internal cell-specific author-annotated
+    metadata, get the "description" attribute, if available.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal cell-specific
+            author-annotated metadata column.
+
+    Returns:
+        The description if available. Otherwise a warning is printed
+        and None is returned.
+
+    Raises:
+        ValueError: If column does not exist.
+    """
     with ac__.get_h5_conn(uuid) as lfile:
         if column in lfile['cell_author_annot'].keys():
             if 'description' in lfile[f'cell_author_annot/{column}'].attrs.keys():
@@ -864,6 +914,23 @@ def get_cell_aa_col_desc(uuid, column):
             raise ValueError(f'\"{column}\" is not a valid column!')
 
 def get_gene_univ_col_desc(uuid, column):
+    """Gets the description attribute for a gene universal column.
+
+    For a given column in the internal gene-specific universal
+    metadata, get the "description" attribute, if available.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal gene-specific
+            universal metadata column.
+
+    Returns:
+        The description if available. Otherwise a warning is printed
+        and None is returned.
+
+    Raises:
+        ValueError: If column does not exist.
+    """
     with ac__.get_h5_conn(uuid) as lfile:
         if column in lfile['row_attrs'].keys():
             if 'description' in lfile[f'row_attrs/{column}'].attrs.keys():
@@ -880,6 +947,23 @@ def get_gene_univ_col_desc(uuid, column):
             raise ValueError(f'\"{column}\" is not a valid column!')
 
 def get_gene_aa_col_desc(uuid, column):
+    """Gets the description attribute for a gene author-annotated column.
+
+    For a given column in the internal gene-specific author-annotated
+    metadata, get the "description" attribute, if available.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal gene-specific
+            author-annotated metadata column.
+
+    Returns:
+        The description if available. Otherwise a warning is printed
+        and None is returned.
+
+    Raises:
+        ValueError: If column does not exist.
+    """
     with ac__.get_h5_conn(uuid) as lfile:
         if column in lfile['gene_author_annot'].keys():
             if 'description' in lfile[f'gene_author_annot/{column}'].attrs.keys():
@@ -896,7 +980,24 @@ def get_gene_aa_col_desc(uuid, column):
             raise ValueError(f'\"{column}\" is not a valid column!')
 
 def set_cell_univ_col_desc(uuid, column, desc):
-    with ac__.get_h5_conn(uuid) as lfile:
+    """Sets the description attribute for a cell universal column.
+
+    For a given column in the internal cell-specific universal
+    metadata, set the "description" attribute. Provides a reasonably
+    robust interactive interface.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal cell-specific
+            universal metadata column.
+        desc: String. The description to set.
+
+    Returns: None
+
+    Raises:
+        ValueError: If column does not exist.
+    """
+    with ac__.get_h5_conn(uuid, write = True) as lfile:
         if column in lfile['col_attrs'].keys():
             if 'description' in lfile[f'col_attrs/{column}'].attrs.keys():
                 loop = True
@@ -929,6 +1030,23 @@ def set_cell_univ_col_desc(uuid, column, desc):
             raise ValueError(f'\"{column}\" is not a valid column!')
 
 def set_cell_aa_col_desc(uuid, column, desc):
+    """Sets the description attribute for a cell author-annotated column.
+
+    For a given column in the internal cell-specific author-annotated
+    metadata, set the "description" attribute. Provides a reasonably
+    robust interactive interface.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal cell-specific
+            universal metadata column.
+        desc: String. The description to set.
+
+    Returns: None
+
+    Raises:
+        ValueError: If column does not exist.
+    """
     with ac__.get_h5_conn(uuid) as lfile:
         if column in lfile['cell_author_annot'].keys():
             if 'description' in lfile[f'cell_author_annot/{column}'].attrs.keys():
@@ -964,6 +1082,23 @@ def set_cell_aa_col_desc(uuid, column, desc):
             raise ValueError(f'\"{column}\" is not a valid column!')
 
 def set_gene_univ_col_desc(uuid, column, desc):
+    """Sets the description attribute for a gene universal column.
+
+    For a given column in the internal gene-specific universal
+    metadata, set the "description" attribute. Provides a reasonably
+    robust interactive interface.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal gene-specific
+            universal metadata column.
+        desc: String. The description to set.
+
+    Returns: None
+
+    Raises:
+        ValueError: If column does not exist.
+    """
     with ac__.get_h5_conn(uuid) as lfile:
         if column in lfile['row_attrs'].keys():
             if 'description' in lfile[f'row_attrs/{column}'].attrs.keys():
@@ -999,6 +1134,23 @@ def set_gene_univ_col_desc(uuid, column, desc):
             raise ValueError(f'\"{column}\" is not a valid column!')
 
 def set_gene_aa_col_desc(uuid, column, desc):
+    """Sets the description attribute for a gene author-annotated column.
+
+    For a given column in the internal gene-specific author-annotated
+    metadata, set the "description" attribute. Provides a reasonably
+    robust interactive interface.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal gene-specific
+            author-annotated metadata column.
+        desc: String. The description to set.
+
+    Returns: None
+
+    Raises:
+        ValueError: If column does not exist.
+    """
     with ac__.get_h5_conn(uuid) as lfile:
         if column in lfile['gene_author_annot'].keys():
             if 'description' in lfile[f'gene_author_annot/{column}'].attrs.keys():
