@@ -297,7 +297,7 @@ def uuid_to_row(uuid_key, columns = None):
                 values.append(row[col])
             else:
                 if not warning_flag:
-                    raise Warning('At least one column is invalid!')
+                    print('WARNING: At least one column is invalid!')
                 warning_flag = True
                 values.append('NOT_A_VALID_COLUMN')
         values = pd.Series(values, index = columns)

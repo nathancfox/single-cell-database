@@ -111,6 +111,7 @@ def get_anndata(uuid, **kwargs):
                                  key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])]
     adata.var = adata.var[sorted(adata.var.columns,
                                  key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])]
+    adata.uns['batch_key'] = get_batch_key(uuid)
     adata.uns['cell_author_annot'] = get_cell_author_annot(uuid)
     adata.uns['gene_author_annot'] = get_gene_author_annot(uuid)
     return(adata)
@@ -298,7 +299,6 @@ def get_gene_ids(uuid, accession = False):
             else:
                 raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
                                     f'an \"Accession\" row attribute!')
-        lfile.close()
         return(gene_ids)
 
 def get_column_description(uuid, column, var = 'cell', metadata = 'universal'):
@@ -389,6 +389,30 @@ def get_batch_key(uuid):
     """
     batch_key = im__.get_cell_batch_key(uuid)
     return(batch_key)
+
+def get_expr_mat_names(uuid):
+    """Get the expression matrix names from a dataset.
+
+    Get the names of all expression matrices in a dataset.
+    The first entry will always be "matrix", referring to
+    the expression matrix stored under lfile['matrix'],
+    instead of under lfile['layers'].
+
+    Args:
+        uuid: String. The UUID Of the desired dataset.
+
+    Returns:
+        A 1-D numpy array of strings containing
+        the names of the matrices.
+
+    Raises: None:
+    """
+    with get_h5_conn(uuid) as lfile:
+        names = ['matrix']
+        for k in lfile['layers'].keys():
+            names.append(k)
+        names = np.array(names)
+        return(names)
 
 def main():
     pass
