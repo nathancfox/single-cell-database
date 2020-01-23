@@ -90,12 +90,12 @@ _EM_COLUMN_DESCRIPTIONS = {
             '04. Condition\n'
             '    Whether or not these cells fall under a disease condition\n'
             '    or an experimental condition. Must be one of these two\n'
-            '    values: {\"True\", \"False\"}. Should be True if these are\n'
-            '    assumed to be normal cells from a healthy organism.\n'
-            '    Should be \"False\" otherwise. This could be \"False\" if the\n'
-            '    organism is unhealthy, if the cells came from a tumor,\n'
-            '    if the organism or cells were subject to an experimental\n'
-            '    condition other than control, etc.'
+            '    values: {\"True\", \"False\"}. Should be False if all values\n'
+            '    for condition in the internal cell-specific universal metadata\n'
+            '    are \"NORMAL\" or \"-1\". Should be \"True\" otherwise.\n'
+            '    This could be \"False\" if the organism is unhealthy, if the\n'
+            '    cells came from a tumor, if the organism or cells were subject\n'
+            '    to an experimental condition other than control, etc.'
         ),
     'date_generated':
         (
@@ -282,7 +282,7 @@ _IMU_CELL_COLUMN_DESCRIPTIONS = {
         (
             '06. Condition\n'
             '    The experimental or disease condition of the cell. If they are\n'
-            '    healthy, untreated cells, this value should be \"0\".\n'
+            '    healthy, untreated cells, this value should be \"NORMAL\".\n'
             '\n'
             '    Missing values are designated with \"-1\". If a cell\'s value\n'
             '    is not missing, but is invalid, it is designated with \"OTHER\"'
