@@ -25,7 +25,12 @@ def get_loom_filename(uuid):
     """Get loom filename for dataset entry.
 
     Given a UUID, get the filepath to the associated
-    loom file from the external metadata file.
+    loom file from the external metadata file. If the
+    UUID is not in the external metadata file, the
+    corresponding folder is searched for in the database.
+    This allows this function to be used during a new
+    entry, when the loom file is created, but the entry
+    hasn't been entered into the external metadata yet.
 
     Args:
         uuid: String. UUID of the desired dataset
@@ -36,14 +41,21 @@ def get_loom_filename(uuid):
 
     Raises:
         ValueError: Raised if uuid is not in the external
-            metadata file.
+            metadata file and is also not a folder with an
+            "expr_mat.loom" file in the database.
         AssertionError: Raised if the filepath to be returned
             does not exist.
     """
     df = em__.get_as_dataframe()
     if uuid not in list(df['uuid']):
+        for dir_entry in os.scandir(GC._PATH_TO_DATABASE):
+            if (dir_entry.name == uuid
+                    and dir_entry.is_dir()
+                    and 'expr_mat.loom' in os.listdir(dir_entry.path)):
+                return(os.path.join(dir_entry.path, 'expr_mat.loom'))
         raise ValueError('uuid is not valid!')
-    filename = df[df['uuid'] == uuid]['file_location'].iloc[0]
+    else:
+        filename = df[df['uuid'] == uuid]['file_location'].iloc[0]
     if not os.path.exists(filename):
         raise AssertionError('Retrieved filename does not exist!')
     filename = os.path.join(filename, 'expr_mat.loom')
