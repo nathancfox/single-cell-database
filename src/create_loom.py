@@ -16,6 +16,7 @@ import pandas as pd
 import scipy
 import h5py as h5
 import general_utils as gu__
+import access as ac__
 import global_constants as GC
 
 def create_loom_file(folder_path, expr_matrix, barcodes, features,
@@ -185,6 +186,81 @@ def get_expr_matrix_from_csv(path, rows = 'genes', **kwargs):
     features = np.array(df.index)
     return(mat, barcodes, features)
 
+def set_layer(new_mat, name, uuid = None, filepath = None):
+    """Sets an expression matrix.
+
+    Sets an expression matrix in the given dataset.
+    Can be accessed via a UUID lookup from the external
+    metadata, or by a direct filepath. Cannot pass
+    both uuid and filepath.
+
+    Args:
+        new_mat: numpy 2-D array of ints or floats. The
+            expression matrix to be stored in the dataset.
+            Must match the dimensions of the matrix under
+            lfile['matrix'].
+        name: String. The name of the expression matrix to
+            write to. If "matrix", will write to the main
+            matrix under lfile['matrix']. Will ask for
+            confirmation if a layer already exists or if
+            the main matrix is being written to.
+        uuid: String. The UUID of the desired dataset.
+            Use if a UUID lookup in the external metadata
+            is possible.
+        filepath: String. A direct filepath to the desired
+            loom file. Use if the desired file does not
+            have an external metadata entry.
+
+    Returns: None
+
+    Raises:
+        ValueError: If new_mat has the wrong shape.
+    """
+    if uuid is None and filepath is None:
+        raise ValueError('uuid and filepath cannot both be None!')
+    if uuid is not None and filepath is not None:
+        raise ValueError('uuid and filepath cannot both be passed!')
+    new_mat = np.array(new_mat)
+    if filepath is None:
+        with ac__.get_h5_conn(uuid, write = True) as lfile:
+            if new_mat.shape != lfile['matrix'].shape:
+                raise ValueError('new_mat has the wrong shape!')
+            if name == 'matrix':
+                print('!!! Warning !!!')
+                print('You are overwriting the main matrix.')
+                if not gu__.get_yes_or_no('Do you want to continue? (y/n): '):
+                    return
+                else:
+                    lfile['matrix'] = new_mat
+            elif name in lfile['layers'].keys():
+                print(f'Layer \"{name}\" already exists!')
+                if not gu__.get_yes_or_no('Do you want to overwrite? (y/n): '):
+                    return
+                else:
+                    lfile[f'layers/{name}'] = new_mat
+            else:
+                dset = lfile.create_dataset(f'layers/{name}',
+                                            data = new_mat)
+    else:
+        with h5.File(filepath, 'r+') as lfile:
+            if new_mat.shape != lfile['matrix'].shape:
+                raise ValueError('new_mat has the wrong shape!')
+            if name == 'matrix':
+                print('!!! Warning !!!')
+                print('You are overwriting the main matrix.')
+                if not gu__.get_yes_or_no('Do you want to continue? (y/n): '):
+                    return
+                else:
+                    lfile['matrix'] = new_mat
+            elif name in lfile['layers'].keys():
+                print(f'Layer \"{name}\" already exists!')
+                if not gu__.get_yes_or_no('Do you want to overwrite? (y/n): '):
+                    return
+                else:
+                    lfile[f'layers/{name}'] = new_mat
+            else:
+                dset = lfile.create_dataset(f'layers/{name}',
+                                            data = new_mat)
 
 def main():
     pass
