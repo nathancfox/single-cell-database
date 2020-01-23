@@ -120,13 +120,14 @@ def get_series_soft_file(gse_id, path):
                   ' and will be overwritten by a temp file created by'
                   ' this method. Please rename it to something else'
                   ' to save it.'))
-    with open('get_series_soft_file_temp.sh', 'w') as f:
+    random_tag = gu__.get_uuid()
+    with open(f'/tmp/{random_tag}_get_series_soft_file_temp.sh', 'w') as f:
         f.write(bash_curl_script)
         f.write('\n')
         f.write(bash_gunzip_script)
         f.write('\n')
-    os.system('bash get_series_soft_file_temp.sh')
-    os.remove('get_series_soft_file_temp.sh')
+    os.system(f'bash /tmp/{random_tag}_get_series_soft_file_temp.sh')
+    # os.remove(f'/tmp/{random_tag}_get_series_soft_file_temp.sh')
     if os.path.exists(f'{path}{gse_id}_family.soft'):
         return(0)
     else:
@@ -167,15 +168,16 @@ def get_series_suppl_files(gse_id, path):
                               'already exists and will be overwritten by '
                               'a temp file created by this method. Please '
                               'rename it to something else to save it.')
-    with open('get_series_suppl_file_temp.sh', 'w') as f:
+    random_tag = gu__.get_uuid()
+    with open(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh', 'w') as f:
         f.write(bash_curl_script)
         f.write('\n')
         f.write(bash_gunzip_script)
         f.write('\n')
-    os.system('bash get_series_suppl_file_temp.sh')
-    os.remove('get_series_suppl_file_temp.sh')
+    os.system(f'bash /tmp/{random_tag}_get_series_suppl_file_temp.sh')
+    # os.remove(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh')
 
-def build_new_entry_folder(path):
+def build_new_entry_folder(path, new_uuid):
     """Builds a folder for a new entry in the database.
 
     Given a path, builds a new folder to store files
@@ -185,18 +187,15 @@ def build_new_entry_folder(path):
     Args:
         path: String. The path to the location in which the
             new folder will be created.
+        new_uuid: String. The UUID for the new entry.
     
     Returns:
-        A tuple with two members:
-            1. The new UUID as a string. Also the name of
-               the new directory.
-            2. The path to the new directory.
+        The path to the new directory.
     
     Raises: None
     """
-    new_id = gu__.get_uuid()
-    os.mkdir(os.path.join(path, new_id))
-    return((new_id, os.path.join(path, new_id) + '/'))
+    os.mkdir(os.path.join(path, new_uuid))
+    return(os.path.join(path, new_uuid) + '/')
 
 def build_new_entry_log(new_id, gse_id, path):
     """Builds a new log file for a new entry in the database.
@@ -328,7 +327,7 @@ def log_directory_listing(path, old_listing = None):
                     f.write(f'{idt}{idt}{entry}\n')
 
 
-def download_series_to_db(gse_id, path, log = True):
+def download_series_to_db(gse_id, new_uuid, path, log = True):
     """Downloads a GEO Series to the database.
 
     Downloads the SOFT file and all associated supplementary
@@ -338,20 +337,18 @@ def download_series_to_db(gse_id, path, log = True):
     Args:
         gse_id: String. The GEO Series ID to scrape.
             e.g. GSE12345
+        new_uuid: String. The UUID for the new entry.
         path: String. The path that the new entry's folder
             will be created in.
         log: Boolean. If True, will log the edits made.
              Otherwise, no log will be created.
     
-    Returns:
-        new_id: String. The name of the new entry's folder
-            and also its UUID.
-
+    Returns: None
     Raises: None
     """
-    new_id, path = build_new_entry_folder(path)
+    path = build_new_entry_folder(path, new_uuid)
     if log:
-        build_new_entry_log(new_id, gse_id, path)
+        build_new_entry_log(new_uuid, gse_id, path)
         old_listing = (set(get_directory_listing(path)),
                     gu__.get_timestamp())
     get_series_soft_file(gse_id, path)
@@ -362,7 +359,6 @@ def download_series_to_db(gse_id, path, log = True):
     get_series_suppl_files(gse_id, path)
     if log:
         log_directory_listing(path, old_listing = old_listing)
-    return(new_id)
 
 def get_sample_char_from_soft(soft_file):
     """Get all sample characteristics from a SOFT file.

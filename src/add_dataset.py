@@ -28,12 +28,13 @@ def print_workflow():
                  '03. Rename files appropriately\n'
                  '04. Create mat, bar, feat using the appropriate method\n'
                  '05. cl__.create_loom_file()\n'
-                 '06. Scrape internal author_annot metadata\n'
-                 '07. im__.set_cell_int_md_author_annot()\n'
-                 '08. im__.set_gene_int_md_author_annot()\n'
-                 '09. Construct universal metadata\n'
-                 '10. im__.set_cell_int_md_univ()\n'
-                 '11. ad__.add_external_metadata()'
+                 '06. Add layers if applicable\n'
+                 '07. Scrape internal author_annot metadata\n'
+                 '08. im__.set_cell_int_md_author_annot()\n'
+                 '09. im__.set_gene_int_md_author_annot()\n'
+                 '10. Construct universal metadata\n'
+                 '11. im__.set_cell_int_md_univ()\n'
+                 '12. ad__.add_external_metadata()'
                )
     print()
     print(workflow)
@@ -117,6 +118,7 @@ def setup():
     remaining_steps = ['Rename files appropriately',
                        'Create mat, bar, feat using the appropriate method from create_loom',
                        '>>> cl__.create_loom_file()',
+                       'Add layers if applicable',
                        'Scrape internal author-annotated metadata',
                        '>>> im__.set_cell_int_md_author_annot()',
                        '>>> im__.set_gene_int_md_author_annot()',
@@ -124,7 +126,7 @@ def setup():
                        '>>> im__.set_cell_int_md_univ()',
                        '>>> ad__.add_external_metadata()']
     for i, step in enumerate(remaining_steps):
-        print(f'  {i:02d}. {step}')
+        print(f'  {i + 1:02d}. {step}')
     print()
 
 def set_new_entry(new_gse_id):
@@ -132,14 +134,15 @@ def set_new_entry(new_gse_id):
     global _gse_id
     global _new_uuid
     _gse_id = new_gse_id
-    _new_uuid = ''
+    _new_uuid = gu__.get_uuid()
 
 def download_files():
     """Downloads GEO files for a new entry."""
     global _new_uuid
-    _new_uuid = ga__.download_series_to_db(_gse_id,
-                                           GC._PATH_TO_DATABASE,
-                                           log = False)
+    ga__.download_series_to_db(_gse_id,
+                               _new_uuid,
+                               GC._PATH_TO_DATABASE,
+                               log = False)
 
 def add_external_metadata():
     """Gets a new entry's external metadata.
