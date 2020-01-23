@@ -533,9 +533,18 @@ def set_cell_int_md_author_annot(uuid, df):
                         columns_written[hdf5_col] = pd.Series(lfile[f'cell_author_annot/{hdf5_col}'])
                         del lfile[f'cell_author_annot/{hdf5_col}']
                 if df[col].dtype == object:
-                    dset = lfile.create_dataset(f'cell_author_annot/{hdf5_col}',
-                                                (lfile['matrix'].shape[1], ),
-                                                dtype = h5.string_dtype())
+                    if h5.__version__ == '2.9.0':
+                        dset = lfile.create_dataset(f'cell_author_annot/{hdf5_col}',
+                                                    (lfile['matrix'].shape[1], ),
+                                                    dtype = h5.special_dtype(vlen = str))
+                    elif h5.__version__ == '2.10.0':
+                        dset = lfile.create_dataset(f'cell_author_annot/{hdf5_col}',
+                                                    (lfile['matrix'].shape[1], ),
+                                                    dtype = h5.string_dtype())
+                    else:
+                        raise AssertionError('Behavior under h5py other '
+                                             'than v2.9.0 or v2.10.0 is '
+                                             'unknown!')
                     if hdf5_col not in columns_written.keys():
                         columns_written[hdf5_col] = None
                     dset[:] = df[col]
@@ -552,9 +561,18 @@ def set_cell_int_md_author_annot(uuid, df):
                     elif type(columns_written[col_del]) == pd.core.series.Series:
                         if col_del in lfile['cell_author_annot'].keys():
                             del lfile[f'cell_author_annot/{col_del}']
-                        dset = lfile.create_dataset(f'cell_author_annot/{col_del}',
-                                                    (lfile['matrix'].shape[1], ),
-                                                    dtype = h5.string_dtype())
+                        if h5.__version__ == '2.9.0':
+                            dset = lfile.create_dataset(f'cell_author_annot/{col_del}',
+                                                        (lfile['matrix'].shape[1], ),
+                                                        dtype = h5.special_dtype(vlen = str))
+                        elif h5.__version__ == '2.10.0':
+                            dset = lfile.create_dataset(f'cell_author_annot/{col_del}',
+                                                        (lfile['matrix'].shape[1], ),
+                                                        dtype = h5.string_dtype())
+                        else:
+                            raise AssertionError('Behavior under h5py other '
+                                                 'than v2.9.0 or v2.10.0 is '
+                                                 'unknown!')
                         dset[:] = columns_written[col_del]
                         col_warnings.add(col_del)
                     else:
@@ -622,9 +640,18 @@ def set_gene_int_md_author_annot(uuid, df):
                         columns_written[hdf5_col] = pd.Series(lfile[f'gene_author_annot/{hdf5_col}'])
                         del lfile[f'cell_author_annot/{hdf5_col}']
                 if df[col].dtype == object:
-                    dset = lfile.create_dataset(f'gene_author_annot/{hdf5_col}',
-                                                (lfile['matrix'].shape[0], ),
-                                                dtype = h5.string_dtype())
+                    if h5.__version__ == '2.9.0':
+                        dset = lfile.create_dataset(f'gene_author_annot/{hdf5_col}',
+                                                    (lfile['matrix'].shape[0], ),
+                                                    dtype = h5.special_dtype(vlen = str))
+                    elif h5.__version__ == '2.10.0':
+                        dset = lfile.create_dataset(f'gene_author_annot/{hdf5_col}',
+                                                    (lfile['matrix'].shape[0], ),
+                                                    dtype = h5.string_dtype())
+                    else:
+                        raise AssertionError('Behavior under h5py other '
+                                             'than v2.9.0 or v2.10.0 is '
+                                             'unknown!')
                     if hdf5_col not in columns_written.keys():
                         columns_written[hdf5_col] = None
                     dset[:] = df[col]
@@ -641,9 +668,18 @@ def set_gene_int_md_author_annot(uuid, df):
                     elif type(columns_written[col_del]) == pd.core.series.Series:
                         if col_del in lfile['gene_author_annot'].keys():
                             del lfile[f'gene_author_annot/{col_del}']
-                        dset = lfile.create_dataset(f'gene_author_annot/{col_del}',
-                                                    (lfile['matrix'].shape[1], ),
-                                                    dtype = h5.string_dtype())
+                        if h5.__version__ == '2.9.0':
+                            dset = lfile.create_dataset(f'gene_author_annot/{col_del}',
+                                                        (lfile['matrix'].shape[1], ),
+                                                        dtype = h5.special_dtype(vlen = str))
+                        elif h5.__version__ == '2.10.0':
+                            dset = lfile.create_dataset(f'gene_author_annot/{col_del}',
+                                                        (lfile['matrix'].shape[1], ),
+                                                        dtype = h5.string_dtype())
+                        else:
+                            raise AssertionError('Behavior under h5py other '
+                                                 'than v2.9.0 or v2.10.0 is '
+                                                 'unknown!')
                         dset[:] = columns_written[col_del]
                         col_warnings.add(col_del)
                     else:
@@ -719,9 +755,18 @@ def set_cell_int_md_univ(uuid, df, batch_key):
                         columns_written[col] = pd.Series(lfile[f'col_attrs/{col}'])
                         del lfile[f'col_attrs/{col}']
                 if df[col].dtype == object:
-                    dset = lfile.create_dataset(f'col_attrs/{col}',
-                                                (lfile['matrix'].shape[1], ),
-                                                dtype = h5.string_dtype())
+                    if h5.__version__ == '2.9.0':
+                        dset = lfile.create_dataset(f'col_attrs/{col}',
+                                                    (lfile['matrix'].shape[1], ),
+                                                    dtype = h5.special_dtype(vlen = str))
+                    elif h5.__version__ == '2.10.0':
+                        dset = lfile.create_dataset(f'col_attrs/{col}',
+                                                    (lfile['matrix'].shape[1], ),
+                                                    dtype = h5.string_dtype())
+                    else:
+                        raise AssertionError('Behavior under h5py other '
+                                             'than v2.9.0 or v2.10.0 is '
+                                             'unknown!')
                     if col not in columns_written.keys():
                         columns_written[col] = None
                     dset[:] = df[col]
@@ -740,9 +785,18 @@ def set_cell_int_md_univ(uuid, df, batch_key):
                     elif type(columns_written[col_del]) == pd.core.series.Series:
                         if col_del in lfile['col_attrs/'].keys():
                             del lfile[f'col_attrs/{col_del}']
-                        dset = lfile.create_dataset(f'col_attrs/{col_del}',
-                                                    (lfile['matrix'].shape[1], ),
-                                                    dtype = h5.string_dtype())
+                        if h5.__version__ == '2.9.0':
+                            dset = lfile.create_dataset(f'col_attrs/{col_del}',
+                                                        (lfile['matrix'].shape[1], ),
+                                                        dtype = h5.special_dtype(vlen = str))
+                        elif h5.__version__ == '2.10.0':
+                            dset = lfile.create_dataset(f'col_attrs/{col_del}',
+                                                        (lfile['matrix'].shape[1], ),
+                                                        dtype = h5.string_dtype())
+                        else:
+                            raise AssertionError('Behavior under h5py other '
+                                                 'than v2.9.0 or v2.10.0 is '
+                                                 'unknown!')
                         dset[:] = columns_written[col_del]
                         col_warnings.add(col_del)
                     else:
@@ -813,9 +867,18 @@ def set_gene_int_md_univ(uuid, df):
                         columns_written[col] = pd.Series(lfile[f'row_attrs/{col}'])
                         del lfile[f'row_attrs/{col}']
                 if df[col].dtype == object:
-                    dset = lfile.create_dataset(f'row_attrs/{col}',
-                                                (lfile['matrix'].shape[0], ),
-                                                dtype = h5.string_dtype())
+                    if h5.__version__ == '2.9.0':
+                        dset = lfile.create_dataset(f'row_attrs/{col}',
+                                                    (lfile['matrix'].shape[0], ),
+                                                    dtype = h5.special_dtype(vlen = str))
+                    elif h5.__version__ == '2.10.0':
+                        dset = lfile.create_dataset(f'row_attrs/{col}',
+                                                    (lfile['matrix'].shape[0], ),
+                                                    dtype = h5.string_dtype())
+                    else:
+                        raise AssertionError('Behavior under h5py other '
+                                             'than v2.9.0 or v2.10.0 is '
+                                             'unknown!')
                     if col not in columns_written.keys():
                         columns_written[col] = None
                     dset[:] = df[col]
@@ -832,9 +895,18 @@ def set_gene_int_md_univ(uuid, df):
                     elif type(columns_written[col_del]) == pd.core.series.Series:
                         if col_del in lfile['row_attrs/'].keys():
                             del lfile[f'row_attrs/{col_del}']
-                        dset = lfile.create_dataset(f'row_attrs/{col_del}',
-                                                    (lfile['matrix'].shape[0], ),
-                                                    dtype = h5.string_dtype())
+                        if h5.__version__ == '2.9.0':
+                            dset = lfile.create_dataset(f'row_attrs/{col_del}',
+                                                        (lfile['matrix'].shape[0], ),
+                                                        dtype = h5.special_dtype(vlen = str))
+                        elif h5.__version__ == '2.10.0':
+                            dset = lfile.create_dataset(f'row_attrs/{col_del}',
+                                                        (lfile['matrix'].shape[0], ),
+                                                        dtype = h5.string_dtype())
+                        else:
+                            raise AssertionError('Behavior under h5py other '
+                                                 'than v2.9.0 or v2.10.0 is '
+                                                 'unknown!')
                         dset[:] = columns_written[col_del]
                         col_warnings.add(col_del)
                     else:
