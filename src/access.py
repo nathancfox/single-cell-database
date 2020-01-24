@@ -80,6 +80,8 @@ def get_h5_conn(uuid, write = False):
     Raises: None
     """
     if write:
+        if os.getuid() != 3003:
+            raise PermissionError('You don\'t have write access!')
         lfile = h5.File(get_loom_filename(uuid), 'r+')
     else:
         lfile = h5.File(get_loom_filename(uuid), 'r')

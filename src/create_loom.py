@@ -244,8 +244,8 @@ def set_layer(new_mat, name, uuid = None):
             else:
                 lfile[f'layers/{name}'] = new_mat
         else:
-            dset = lfile.create_dataset(f'layers/{name}',
-                                        data = new_mat)
+            lfile.create_dataset(f'layers/{name}',
+                                 data = new_mat)
 
 def main():
     pass

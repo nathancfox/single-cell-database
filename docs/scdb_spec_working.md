@@ -150,7 +150,22 @@ stored. If an entry does not match the schema, or contains multiple values that 
 This is a description of how the above SCDB schema is actually implemented.
 
 The database is stored in a single folder on the Gillis Lab server, `tyrone`, at
-`/data/single_cell_database/`. Inside that folder, there are 2 files and `n` folders, where `n` is
+`/data/single_cell_database/`. Inside that folder, there are 2 folders:
+
+| Folder | Description |
+|:-------|:------------|
+|`src`|The code allowing programmatic access to the database.|
+|`database`|The entries and metadata of the database.|
+
+Inside `src/`, there are multiple folders, each corresponding to a version of the code providing
+database access. They are all named `vVERSION_NUMBER` (e.g. `v0.2`). There is also a symbolic
+link named `current` that links to the latest version. There is also a file called `setup.sh`.
+This is a bash script that should be "sourced" in order to provide import access to the
+Python code. It allows specifying a specific version. Each version contains a Python package
+called `scdb`. `scdb` also contains a R script called `access.R` that provides similar
+functions, but in R.
+
+Inside `database/`, there are 2 files and `n` folders, where `n` is
 the number of entries in the database. There should be no other files or folders in this
 root SCDB folder.
 

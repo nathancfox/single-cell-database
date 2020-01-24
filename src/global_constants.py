@@ -181,7 +181,7 @@ _EM_COLUMN_DESCRIPTIONS = {
             '    A full, absolute path to the folder holding the loom\n'
             '    file and all internal metadata for this dataset.\n'
             '    Must end with a \'/\'.\n'
-            '    e.g. \"/data/single_cell_database/12345678-1234-5678-1234-567812345678/\"'
+            '    e.g. \"/data/single_cell_database/database/12345678-1234-5678-1234-567812345678/\"'
         ),
     'internal':
         (

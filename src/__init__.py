@@ -28,7 +28,6 @@ for mod in modules:
         if module.__name__ == 'h5py':
             if module.__version__ not in ['2.9.0', '2.10.0']:
                 raise ImportError('h5py must be version 2.9.0 or 2.10.0!')
-        del module
     except ImportError:
         import_failures.append(mod)
 if len(import_failures) != 0:
@@ -36,6 +35,28 @@ if len(import_failures) != 0:
     raise ImportError('The following dependencies failed to import: '
                       + import_failures)
 
+# Cleanup before import setup
+del sys
+del importlib
+del modules
+del import_failures
+del mod
+del module
+
 # All checks are passed and the import setup is happening
-from . import access
-from .access import *
+from .access import get_anndata
+from .access import get_batch_key
+from .access import get_cell_author_annot
+from .access import get_cell_ids
+from .access import get_cell_univ
+from .access import get_column_description
+from .access import get_expr_mat_names
+from .access import get_expr_mat
+from .access import get_extern_md
+from .access import get_gene_author_annot
+from .access import get_gene_ids
+from .access import get_gene_univ
+from .access import get_h5_conn
+from .access import get_loom_conn
+from .access import get_loom_filename
+from .access import uuid_to_row
