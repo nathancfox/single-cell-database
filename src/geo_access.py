@@ -6,11 +6,11 @@ related to building a new folder and creating log files.
 
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
-import sys
-sys.path.append('/home/scdb_codebase/single_cell_database/src')
+# import sys
+# sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import os
 import datetime as dt
-import general_utils as gu__
+from . import general_utils as gu__
 
 def convert_gse_to_folder(gse_id):
     """Converts GEO Series ID to FTP folder.
@@ -115,11 +115,6 @@ def get_series_soft_file(gse_id, path):
     bash_curl_script = (f'wget -q -P {path} '
                         f'\"{ftp_url}\"')
     bash_gunzip_script = (f'gunzip {path}{file_name}')
-    if os.path.exists('get_series_soft_file_temp.sh'):
-        sys.exit(('File \"get_series_soft_file_temp.sh\" already exists'
-                  ' and will be overwritten by a temp file created by'
-                  ' this method. Please rename it to something else'
-                  ' to save it.'))
     random_tag = gu__.get_uuid()
     with open(f'/tmp/{random_tag}_get_series_soft_file_temp.sh', 'w') as f:
         f.write(bash_curl_script)
@@ -127,7 +122,7 @@ def get_series_soft_file(gse_id, path):
         f.write(bash_gunzip_script)
         f.write('\n')
     os.system(f'bash /tmp/{random_tag}_get_series_soft_file_temp.sh')
-    # os.remove(f'/tmp/{random_tag}_get_series_soft_file_temp.sh')
+    os.remove(f'/tmp/{random_tag}_get_series_soft_file_temp.sh')
     if os.path.exists(f'{path}{gse_id}_family.soft'):
         return(0)
     else:
@@ -163,11 +158,6 @@ def get_series_suppl_files(gse_id, path):
     bash_curl_script = ('wget -q --no-parent --recursive --level=1 '
                        f'--no-directories -P {path} \"{ftp_url}\"')
     bash_gunzip_script = (f'gunzip {path}*gz')
-    if os.path.exists('get_series_suppl_file_temp.sh'):
-        raise FileExistsError('File \"get_series_suppl_file_temp.sh\" '
-                              'already exists and will be overwritten by '
-                              'a temp file created by this method. Please '
-                              'rename it to something else to save it.')
     random_tag = gu__.get_uuid()
     with open(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh', 'w') as f:
         f.write(bash_curl_script)
@@ -175,7 +165,7 @@ def get_series_suppl_files(gse_id, path):
         f.write(bash_gunzip_script)
         f.write('\n')
     os.system(f'bash /tmp/{random_tag}_get_series_suppl_file_temp.sh')
-    # os.remove(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh')
+    os.remove(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh')
 
 def build_new_entry_folder(path, new_uuid):
     """Builds a folder for a new entry in the database.

@@ -3,9 +3,9 @@
 # reading "HARDCODED CONSTANT FLAG"
 
 # HARDCODED CONSTANT FLAG
-PATH_TO_DATABASE <- "/data/single_cell_database"
+PATH_TO_DATABASE <- "/data/single_cell_database/database"
 # HARDCODED CONSTANT FLAG
-PATH_TO_METADATA <- "/data/single_cell_database/external_metadata.tsv"
+PATH_TO_METADATA <- "/data/single_cell_database/database/external_metadata.tsv"
 ARRAY_WARNING <- paste("\nWARNING: R and Python interpret binary matrices\n",
                        "in transposed ways. R uses column-major order and\n",
                        "Python uses row-major order. Because the database\n",

@@ -6,14 +6,14 @@ external metadata file. This is stored in global_constants.py.
 
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
-import sys
-sys.path.append('/home/scdb_codebase/single_cell_database/src')
+# import sys
+# sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import pandas as pd
 import os
 import re
 import pprint
-import global_constants as GC
-import general_utils as gu__
+from . import global_constants as GC
+from . import general_utils as gu__
 
 def append_row(new_row):
     """Append a new entry to the external metadata database.

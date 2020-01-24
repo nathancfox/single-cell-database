@@ -7,14 +7,14 @@ metadata schema details.
 
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
-import sys
-sys.path.append('/home/scdb_codebase/single_cell_database/src')
+# import sys
+# sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import os
-import create_loom as cl__
-import external_metadata as em__
-import geo_access as ga__
-import general_utils as gu__
-import global_constants as GC
+from . import create_loom as cl__
+from . import external_metadata as em__
+from . import geo_access as ga__
+from . import general_utils as gu__
+from . import global_constants as GC
 
 # Global variables
 _gse_id = ''

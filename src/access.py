@@ -9,17 +9,17 @@ UUID.
 
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
-import sys
-sys.path.append('/home/scdb_codebase/single_cell_database/src')
+# import sys
+# sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import os
 import h5py as h5
 import loompy as lp
 import scanpy as sc
 import numpy as np
 import pandas as pd
-import external_metadata as em__
-import internal_metadata as im__
-import global_constants as GC
+from . import external_metadata as em__
+from . import internal_metadata as im__
+from . import global_constants as GC
 
 def get_loom_filename(uuid):
     """Get loom filename for dataset entry.

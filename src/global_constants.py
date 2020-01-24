@@ -56,8 +56,8 @@ LICENSE: GNU General Public License v3.0 (see LICENSE file)
 # These 2 are mirrored in the access.R file.
 # If you ever change these, MAKE SURE TO UPDATE
 # THE ONES IN THE access.R FILE!
-_PATH_TO_DATABASE = '/data/single_cell_database'
-_PATH_TO_METADATA = '/data/single_cell_database/external_metadata.tsv'
+_PATH_TO_DATABASE = '/data/single_cell_database/database'
+_PATH_TO_METADATA = '/data/single_cell_database/database/external_metadata.tsv'
 
 _EM_COLUMN_DESCRIPTIONS = {
     'species': 
@@ -308,6 +308,9 @@ _IMU_CELL_COLUMN_DESCRIPTIONS = {
         )
 }
 
+# This is mirrored in the access.R file.
+# If you ever change this, MAKE SURE TO UPDATE
+# THE ONE IN THE access.R FILE!
 _IMU_CELL_COLUMN_INDEX = {
     'cluster'        : 0,
     'species'        : 1,
@@ -331,6 +334,9 @@ _IMU_CELL_COLUMN_MANDATORY = {
 }
 
 _IMU_GENE_COLUMN_DESCRIPTIONS = {}
+# This is mirrored in the access.R file.
+# If you ever change this, MAKE SURE TO UPDATE
+# THE ONE IN THE access.R FILE!
 _IMU_GENE_COLUMN_INDEX = {}
 _IMU_GENE_COLUMN_MANDATORY = {}
 

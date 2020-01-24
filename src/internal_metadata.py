@@ -6,15 +6,15 @@ gene-specific universal and author-annotated internal metadata.
 
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
-import sys
-sys.path.append('/home/scdb_codebase/single_cell_database/src')
+# import sys
+# sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import numpy as np
 import pandas as pd
 import h5py as h5
 import re
-import access as ac__
-import global_constants as GC
-import general_utils as gu__
+from . import access as ac__
+from . import global_constants as GC
+from . import general_utils as gu__
 
 # These methods were built to support a MAPPING schema
 # originally described in blog post "Nathan: Jan 6 - Jan 10"

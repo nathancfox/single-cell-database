@@ -7,17 +7,17 @@ arguments from a variety of expression data formats.
 
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
-import sys
-sys.path.append('/home/scdb_codebase/single_cell_database/src')
+# import sys
+# sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import os
 import loompy as lp
 import numpy as np
 import pandas as pd
 import scipy
 import h5py as h5
-import general_utils as gu__
-import access as ac__
-import global_constants as GC
+from . import general_utils as gu__
+from . import access as ac__
+from . import global_constants as GC
 
 def create_loom_file(folder_path, expr_matrix, barcodes,
                      acc = None, genes = None):
@@ -87,9 +87,8 @@ def create_loom_file(folder_path, expr_matrix, barcodes,
         row_attrs['Gene'] = genes
     try:
         lp.create(file_path, expr_matrix, row_attrs, col_attrs)
-    except MemoryError:
-        print('\nERROR: Dataset too large to create a loom file!\n')
-        sys.exit(1)
+    except MemoryError as e:
+        raise ValueError('Dataset too large to create a loom file!') from e
     with h5.File(file_path, 'r+') as lfile:
         # Add edits to the loom file specification
         lfile.create_group('cell_author_annot')
