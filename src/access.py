@@ -123,17 +123,37 @@ def get_anndata(uuid, **kwargs):
     # in the 'Gene' or 'Accession' row attribute.
     if 'var_names' not in kwargs.keys():
         with get_h5_conn(uuid) as lfile:
-            if 'Gene' in lfile['row_attrs'].keys():
-                pass
-            elif 'Accession' in lfile['row_attrs'].keys():
+            if 'Accession' in lfile['row_attrs'].keys():
                 kwargs['var_names'] = 'Accession'
+            elif 'Gene' in lfile['row_attrs'].keys():
+                kwargs['var_names'] = 'Gene'
             else:
-                pass
+                # By passing a column that doesn't exist, the constructor
+                # silently creates a numbered index
+                kwargs['var_names'] = 'PLACEHOLDER_FOR_NUMBERED_INDEX'
     adata = sc.read_loom(get_loom_filename(uuid), **kwargs)
+    # Accession and Gene are handled separately because they
+    # aren't handled with the global constants, and so they
+    # can't be sorted by their index.
+    add_acc = False
+    add_gene = False
+    if 'Accession' in list(adata.var.columns):
+        add_acc = True
+    if 'Gene' in list(adata.var.columns):
+        add_gene = True
+    var_columns = list(filter(lambda x: x not in ['Accession', 'Gene'],
+                              adata.var.columns))
+    var_column_order = sorted(var_columns,
+                              key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
+    # Prepended in reverse order to ensure that
+    # Accession will come before Gene
+    if add_gene:
+        var_column_order = ['Gene'] + var_column_order
+    if add_acc:
+        var_column_order = ['Accession'] + var_column_order
+    adata.var = adata.var[var_column_order]
     adata.obs = adata.obs[sorted(adata.obs.columns,
                                  key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])]
-    adata.var = adata.var[sorted(adata.var.columns,
-                                 key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])]
     adata.uns['batch_key'] = get_batch_key(uuid)
     adata.uns['cell_author_annot'] = get_cell_author_annot(uuid)
     adata.uns['gene_author_annot'] = get_gene_author_annot(uuid)

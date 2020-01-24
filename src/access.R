@@ -6,7 +6,7 @@
 PATH_TO_DATABASE <- "/data/single_cell_database"
 # HARDCODED CONSTANT FLAG
 PATH_TO_METADATA <- "/data/single_cell_database/external_metadata.tsv"
-ARRAY_WARNING <- paste("\nWARNING!! R and Python interpret binary matrices\n",
+ARRAY_WARNING <- paste("\nWARNING: R and Python interpret binary matrices\n",
                        "in transposed ways. R uses column-major order and\n",
                        "Python uses row-major order. Because the database\n",
                        "entries are created in Python, this means that all\n",
@@ -37,6 +37,13 @@ get_loom_filename <- function(uuid) {
                     row.names = NULL,
                     stringsAsFactors = FALSE)
     if (!(uuid %in% df$uuid)) {
+        dir_entries <- list.dir(PATH_TO_DATABASE)
+        for (i in seq_along(dir_entries)) {
+            if (dir_entries[i] == uuid
+                    && 'expr_mat.loom' %in% list.files(file.path(PATH_TO_DATABASE, dir_entries[i]))) {
+                return(file.path(PATH_TO_DATABASE, dir_entries[i], 'expr_mat.loom'))
+            }
+        }
         stop("uuid is not valid!")
     }
     filename <- df[df$uuid == uuid, "file_location"]
@@ -248,9 +255,8 @@ get_sce <- function(uuid,
         colData = col_data,
         metadata = metadata
     )
-    suppressWarnings(
-        rownames(sce) <- get_gene_ids(uuid, accession = FALSE)
-    )
+    # Use this because it handles choosing between Accession and Gene
+    rownames(sce) <- rownames(row_data)
     # Removed because the get_gene_author_annot() function leaves it closed
     # lfile$close_all()
     return(sce)
@@ -322,7 +328,9 @@ get_cell_univ <- function(uuid, keep_missing = TRUE) {
 #' Get the gene universal metadata.
 #' 
 #' Get the gene universal metadata from a given dataset
-#' as a dataframe.
+#' as a dataframe. SEts rownames preferentially as Accession,
+#' Gene, or a number range in that order. Accession and Gene
+#' will not be used if they have non-unique values.
 #' 
 #' @param uuid Character vector of length 1. UUID of the desired dataset.
 #' @param keep_missing Logical vector of length 1. If TRUE, the returned
@@ -347,18 +355,30 @@ get_gene_univ <- function(uuid, keep_missing = TRUE) {
     # operation just to get a dimension more readably.
     row_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[2],
                                   ncol = 0))
-    if ("Gene" %in% row_keys) {
-        index <- "Gene"
-        skip_col <- "Gene"
-    } else if("Accession" %in% row_keys) {
-        index <- "Accession"
-        skip_col <- "Accession"
+    skip_col <- c()
+    if ("Accession" %in% row_keys) {
+        if (length(lfile[["row_attrs/Accession"]])
+                == length(unique(lfile[["row_attrs/Accession"]]))) {
+            index <- "Accession"
+            skip_col <- c("Accession", skip_col)
+        } else {
+            warning('\"Accession\" has non-unique values!')
+            index <- ""
+        }
+   } else if("Gene" %in% row_keys) {
+        if (length(lfile[["row_attrs/Gene"]])
+                == length(unique(lfile[["row_attrs/Gene"]]))) {
+            index <- "Gene"
+            skip_col <- c("Gene", skip_col)
+        } else {
+            index <- ""
+        }
     } else {
+        warning("\"Gene\" and \"Accession\" are both missing!")
         index <- ""
-        skip_col <- ""
     }
     for (i in seq_along(row_keys)) {
-        if (row_keys[i] == skip_col) {
+        if (row_keys[i] %in% skip_col) {
             next
         }
         k <- paste("row_attrs/", row_keys[i], sep = "")
@@ -375,23 +395,33 @@ get_gene_univ <- function(uuid, keep_missing = TRUE) {
     if (ncol(row_data) == 0) {
         row_data <- NULL
     } else {
+        add_acc <- FALSE
+        add_gene <- FALSE
+        if ("Accession" %in% colnames(row_data)) {
+            add_acc <- TRUE
+        }
+        if ("Gene" %in% colnames(row_data)) {
+            add_gene <- TRUE
+        }
+        columns <- colnames(row_data)
+        columns <- columns[!(columns %in% c("Accession", "Gene"))]
         # HARDCODED CONSTANT FLAG
         column_order <- c()
         column_order <- column_order[column_order %in% colnames(row_data)]
-        row_data <- row_data[, column_order]
+        if (add_gene) {
+            column_order <- c("Gene", column_order)
+        }
+        if (add_acc) {
+            column_order <- c("Accession", column_order)
+        }
         if (index == "Gene") {
             rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
-            if ("Accession" %in% row_keys) {
-                column_order <- c("Accession", column_order)
-            }
         } else if (index == "Accession") {
             rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
-            if ("Gene" %in% row_keys) {
-                column_order <- c("Gene", column_order)
-            }
         } else {
-            # Do Nothing
+            # Do Nothing and let the rownames be numbers
         }
+        row_data <- row_data[, column_order]
     }
     lfile$close_all()
     return(row_data)
@@ -443,7 +473,9 @@ get_cell_author_annot <- function(uuid) {
 #' Get the gene author-annotations.
 #' 
 #' Get the gene author-annotations from a given dataset
-#' as a dataframe.
+#' as a dataframe. Sets rownames preferentially as Accession,
+#' Gene, or a number range in that order. Accession and Gene
+#' will not be used if they have non-unique values.
 #' 
 #' @param uuid Character vector of length 1. UUID of the desired dataset.
 #' @return A dataframe holding all the data available from the gene
@@ -470,12 +502,24 @@ get_gene_author_annot <- function(uuid) {
             row_data[row_keys[i]] <- lfile[[k]][ ]
         }
     }
-    if ("Gene" %in% row_keys) {
-        rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
-    } else if ("Accession" %in% row_keys) {
-        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+    if ("Accession" %in% row_keys) {
+        if (length(lfile[["row_attrs/Accession"]])
+                == length(unique(lfile[["row_attrs/Accession"]]))) {
+            rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+        } else {
+            warning('\"Accession\" has non-unique values!')
+            # Do Nothing and let the rownames be numbers
+        }
+   } else if("Gene" %in% row_keys) {
+        if (length(lfile[["row_attrs/Gene"]])
+                == length(unique(lfile[["row_attrs/Gene"]]))) {
+            rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
+        } else {
+            # Do Nothing and let the rownames be numbers
+        }
     } else {
-        # Do Nothing
+        warning("\"Gene\" and \"Accession\" are both missing!")
+        # Do Nothing and let the rownames be numbers
     }
     if (ncol(row_data) == 0) {
         row_data <- NULL

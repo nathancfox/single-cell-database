@@ -98,8 +98,8 @@ An entry Must contain "Gene", "Accession", or both, but it may not omit both fie
 
 | Field | Description | Possible Values |
 |:------|:------------|:----------------|
-|Gene|Suggested by the loom file specification. Any human-readable gene ID. This field is not required to have unique values|Any human readable gene ID.|
 |Accession|Suggested by the loom file specification. Any accession gene ID. This field must have unique values.|e.g. "ENSMUSG00000082108"|
+|Gene|Suggested by the loom file specification. Any human-readable gene ID. This field is not required to have unique values|Any human readable gene ID.|
 
 ### Internal Author Annotated Metadata <a name="internal_author_annotated_metadata_schema"></a>
 

@@ -288,9 +288,9 @@ def construct_batch(df, columns):
     for i, col in enumerate(columns):
         if '/' in col:
             columns[i] = re.sub(r'/', r'_', col)
-            print('!!! Warning !!!\n'
-                    '\"/\" characters are not allowed in column names!\n'
-                    f'\"{col}\" was changed to \"{columns[i]}\".\n')
+            print('WARNING: internal_metadata.construct_batch()\n'
+                  '  \"/\" characters are not allowed in column names!\n'
+                 f'  \"{col}\" was changed to \"{columns[i]}\".\n')
     return((out, '|'.join(columns)))
 
 def get_cell_batch_key(uuid):
@@ -367,7 +367,11 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
     """Gets the gene universal metadata.
 
     Gets the gene universal metadata from the given dataset
-    as a Pandas DataFrame. 
+    as a Pandas DataFrame. Sets index preferentially
+    as Accession, Gene, or a number index in that order.
+    Accession and Gene will not be used if they have non-unique
+    values.
+
 
     Args:
         uuid: String. UUID of the desired dataset
@@ -384,16 +388,31 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
     """
     with ac__.get_h5_conn(uuid) as lfile:
         row_keys = list(lfile['row_attrs'].keys())
-        if 'Gene' in row_keys:
-            row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
-            skip_col = 'Gene'
-        elif 'Accession' in row_keys:
-            row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
-            skip_col = 'Accession'
+        skip_col = []
+        if 'Accession' in row_keys:
+            acc = pd.Series(lfile['row_attrs/Accession'])
+            if acc.shape == acc.unique().shape:
+                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
+                skip_col.append('Accession')
+            else:
+                print('WARNING: internal_metadata.get_gene_int_md_univ()')
+                print('  \"Accession\" has non-unique values!')
+                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
+            del acc
+        elif 'Gene' in row_keys:
+            gene = pd.Series(lfile['row_attrs/Gene'])
+            if gene.shape == gene.unique().shape:
+                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
+                skip_col.append('Gene')
+            else:
+                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
+            del gene
         else:
-            row_data = pd.DataFrame()
+            print('WARNING: internal_metadata.get_gene_int_md_univ()')
+            print('  \"Gene\" and \"Accession\" are both missing!')
+            row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
         for key in row_keys:
-            if key == skip_col:
+            if key in skip_col:
                 continue
             key_path = 'row_attrs/' + key
             if len(lfile[key_path].shape) == 1:
@@ -405,12 +424,25 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
         if row_data.shape[1] == 0:
             row_data = None
         else:
-            column_order = sorted(row_data.columns,
-                                key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
-            if skip_col == 'Gene' and 'Accession' in row_keys:
-                column_order = ['Accession'] + column_order
-            elif skip_col == 'Accession' and 'Gene' in row_keys:
+            # Accession and Gene are handled separately because they
+            # aren't handled with the global constants, and so they
+            # can't be sorted by their index.
+            add_acc = False
+            add_gene = False
+            if 'Accession' in list(row_data.columns):
+                add_acc = True
+            if 'Gene' in list(row_data.columns):
+                add_gene = True
+            columns = list(filter(lambda x: x not in ['Accession', 'Gene'],
+                                  row_data.columns))
+            column_order = sorted(columns,
+                                  key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
+            # Prepended in reverse order to ensure that
+            # Accession will come before Gene
+            if add_gene:
                 column_order = ['Gene'] + column_order
+            if add_acc:
+                column_order = ['Accession'] + column_order
             row_data = row_data[column_order]
         return(row_data)
 
@@ -448,7 +480,10 @@ def get_gene_int_md_author_annot(uuid):
     """Gets the gene author-annotated metadata.
 
     Gets the gene author-annotated metadata from the given
-    dataset as a Pandas DataFrame.
+    dataset as a Pandas DataFrame. Sets index preferentially
+    as Accession, Gene, or a number index in that order.
+    Accession and Gene will not be used if they have non-unique
+    values.
 
     Args:
         uuid: String. UUID of the desired dataset
@@ -462,12 +497,27 @@ def get_gene_int_md_author_annot(uuid):
     """
     with ac__.get_h5_conn(uuid) as lfile:
         row_keys = list(lfile['gene_author_annot'].keys())
-        if 'Gene' in row_keys:
-            row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
-        elif 'Accession' in row_keys:
-            row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
+        univ_row_keys = list(lfile['row_attrs'].keys())
+        if 'Accession' in univ_row_keys:
+            acc = pd.Series(lfile['row_attrs/Accession'])
+            if acc.shape == acc.unique().shape:
+                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
+            else:
+                print('WARNING: internal_metadata.get_gene_int_md_author_annot()')
+                print('  \"Accession\" has non-unique values!')
+                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
+            del acc
+        elif 'Gene' in univ_row_keys:
+            gene = pd.Series(lfile['row_attrs/Gene'])
+            if gene.shape == gene.unique().shape:
+                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
+            else:
+                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
+            del gene
         else:
-            row_data = pd.DataFrame()
+            print('WARNING: internal_metadata.get_gene_int_md_author_annot()')
+            print('  \"Gene\" and \"Accession\" are both missing!')
+            row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
         for key in row_keys:
             key_path = 'gene_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
@@ -517,9 +567,9 @@ def set_cell_int_md_author_annot(uuid, df):
             try:
                 if '/' in col:
                     hdf5_col = re.sub(r'/', r'_', col)
-                    print('!!! Warning !!!\n'
-                          '\"/\" characters are not allowed in column names!\n'
-                         f'\"{col}\" was changed to \"{hdf5_col}\".\n')
+                    print('WARNING: internal_metadata.set_cell_int_md_author_annot()\n'
+                          '  \"/\" characters are not allowed in column names!\n'
+                         f'  \"{col}\" was changed to \"{hdf5_col}\".\n')
                 else:
                     hdf5_col = col
                 column_order.append(hdf5_col)
@@ -624,9 +674,9 @@ def set_gene_int_md_author_annot(uuid, df):
             try:
                 if '/' in col:
                     hdf5_col = re.sub(r'/', r'_', col)
-                    print('!!! Warning !!!\n'
-                          '\"/\" characters are not allowed in column names!\n'
-                         f'\"{col}\" was changed to \"{hdf5_col}\".\n')
+                    print('WARNING: internal_metadata.set_gene_int_md_author_annot()\n'
+                          '  \"/\" characters are not allowed in column names!\n'
+                         f'  \"{col}\" was changed to \"{hdf5_col}\".\n')
                 else:
                     hdf5_col = col
                 column_order.append(hdf5_col)
@@ -830,8 +880,9 @@ def set_gene_int_md_univ(uuid, df):
 
     Raises:
         AssertionError: If df has the wrong number of rows, or if
-            df has invalid columns. Also if column names have
-            an invalid character.
+            df has invalid columns, if column names have
+            an invalid character, or if Accession has non-unique
+            values.
         RuntimeError: If anything went wrong during the writing
             process. The method attempts to undo all of the
             edits it made before throwing this error.
@@ -840,7 +891,8 @@ def set_gene_int_md_univ(uuid, df):
         if df.shape[0] != lfile['matrix'].shape[0]:
             raise AssertionError('df has the wrong number of rows!')
         test_cols = np.array(df.columns)
-        if not np.isin(test_cols, np.array(list(GC._IMU_GENE_COLUMN_INDEX.keys()))).all():
+        if not np.isin(test_cols, np.array(['Gene', 'Accession']
+                                         + list(GC._IMU_GENE_COLUMN_INDEX.keys()))).all():
             raise AssertionError('df has invalid columns!')
         if np.unique(test_cols).shape[0] != df.columns.shape[0]:
             raise AssertionError('df has non-unique columns!')
@@ -857,6 +909,10 @@ def set_gene_int_md_univ(uuid, df):
                 if '/' in col:
                     raise AssertionError('Universal internal metadata column '
                                          'names may not have \"/\" characters!')
+                if col == 'Accession':
+                    if df[col].shape != df[col].unique().shape:
+                        raise AssertionError('\"Accession\" has non-unique '
+                                             'values!')
                 if col in lfile['row_attrs'].keys():
                     overwrite_col = gu__.get_yes_or_no(f'Column \"{col}\" '
                                                         'already exists!\n'

@@ -19,8 +19,8 @@ import general_utils as gu__
 import access as ac__
 import global_constants as GC
 
-def create_loom_file(folder_path, expr_matrix, barcodes, features,
-                     feat_acc = True):
+def create_loom_file(folder_path, expr_matrix, barcodes,
+                     acc = None, genes = None):
     """Creates a loom file.
 
     Creates a loom file from a passed expression matrix, list
@@ -43,12 +43,19 @@ def create_loom_file(folder_path, expr_matrix, barcodes, features,
         barcodes: numpy.ndarray. Should be a single dimension
             array holding the cell IDs. Length must equal
             the number of columns in expr_matrix.
-        features: numpy.ndarray. Should be a single dimension
-            array holding the gene IDs. Length must equal
+        acc: numpy.ndarray. Should be a single dimension
+            array holding gene IDs to be stored in Accession.
+            These should be unique gene IDs, such as Ensembl
+            IDs. Length must equal the number of rows
+            in expr_matrix.
+        genes: numpy.ndarray. Should be a single dimension
+            array holding gene IDs to be stored in Gene.
+            These should be human-readable gene IDs and don't
+            necessarily have to be unique. Length must equal
             the number of rows in expr_matrix.
         feat_acc: Boolean. True if the features should be
             stored under 'Accession' in the loom file. This
-            is appropriate for unique Ensemble IDs for instance.
+            is appropriate for unique Ensembl IDs for instance.
             If the features are human-readable gene names that
             may not be unique, then they will be stored under
             'Gene', and this argument should be False.
@@ -58,17 +65,26 @@ def create_loom_file(folder_path, expr_matrix, barcodes, features,
     Raises:
         FileNotFoundError: If the passed folder does not exist.
         FileExistsError: If the expr_mat.loom file already exists.
+        ValueError: If neither acc nor genes are passed, or if
+            acc has non-unique values.
+        MemoryError: If loompy.create() fails because of a
+            memory overflow error.
     """
     if not os.path.exists(folder_path):
         raise FileNotFoundError(f'{folder_path} doesn\'t exist!')
     file_path = os.path.join(folder_path, 'expr_mat.loom')
     if os.path.exists(file_path):
         raise FileExistsError(f'{file_path} already exists!')
+    if acc is None and genes is None:
+        raise ValueError('acc and genes cannot both be None!')
     col_attrs = {'CellID': barcodes}
-    if feat_acc:
-        row_attrs = {'Accession': features}
-    else:
-        row_attrs = {'Gene': features}
+    row_attrs = {}
+    if acc is not None:
+        if acc.shape != np.unique(acc).shape:
+            raise ValueError('acc cannot have non-unique values!')
+        row_attrs['Accession'] = acc
+    if genes is not None:
+        row_attrs['Gene'] = genes
     try:
         lp.create(file_path, expr_matrix, row_attrs, col_attrs)
     except MemoryError:
