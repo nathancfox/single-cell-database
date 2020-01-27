@@ -1,3 +1,7 @@
+# Couldn't figure out how to use sparse matrices without
+# explicitly attaching this package
+library(Matrix)
+
 # All places where something is hardcoded in instead of taking
 # from global_constants.py are flagged with a comment
 # reading "HARDCODED CONSTANT FLAG"
@@ -59,7 +63,7 @@ get_loom_filename <- function(uuid) {
         stop("uuid is not valid!")
     }
     filename <- df[df$uuid == uuid, "uuid"]
-    filename = file.path(get_PATH_TO_DATABASE, filename, "expr_mat.loom")
+    filename = file.path(get_PATH_TO_DATABASE(), filename, "expr_mat.loom")
     if (!(file.exists(filename))) {
         stop("Retrieved filename does not exist!")
     }
@@ -795,18 +799,18 @@ get_column_description <- function(uuid, column,
 #' @param matrix Character vector of length 1. Name of the desired expression
 #'   matrix. If "matrix", the main expression matrix under lfile[["matrix"]]
 #'   will be returned. Otherwise, must be a valid layer.
-#' @return A genes x cells unnamed matrix holding the requested expression
-#'   matrix.
+#' @return A genes x cells unnamed sparse matrix holding the requested
+#'   expression matrix. It is a Matrix::dgCMatrix class.
 get_expr_mat <- function(uuid, matrix = "matrix") {
     lfile <- get_h5_conn(uuid, warning = FALSE)
     if (matrix == "matrix") {
-        return_mat <- t(lfile[["matrix"]][ , ])
+        return_mat <- as(t(lfile[["matrix"]][ , ]), "dgCMatrix")
     } else {
         if (!(matrix %in% names(lfile[["layers"]]))) {
             stop("matrix must be \"matrix\" or a valid layer name!")
         } else {
             key <- paste("layers/", matrix, sep = "")
-            return_mat <- t(lfile[[key]][ , ])
+            return_mat <- as(t(lfile[[key]][ , ]), "dgCMatrix")
         }
     }
     # TODO: Add rownames and column names. Requires smart parsing

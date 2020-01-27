@@ -17,6 +17,7 @@ import loompy as lp
 import scanpy as sc
 import numpy as np
 import pandas as pd
+import scipy.sparse
 from . import external_metadata as em__
 from . import internal_metadata as im__
 from . import global_constants as GC
@@ -387,20 +388,23 @@ def get_column_description(uuid, column, var = 'cell', metadata = 'universal'):
     else:
         raise ValueError('metadata must be \"universal\" or \"author_annot\"!')
 
-def get_expr_mat(uuid, matrix = 'matrix'):
+def get_expr_mat(uuid, matrix = 'matrix', row_oriented = False):
     """Get an expression matrix as a numpy array.
 
     From the given dataset, extract an expression matrix from it
-    as a numpy array.
+    as a scipy sparse matrix.
 
     Args:
         uuid: String. The UUID of the desired dataset.
         matrix: String. The name of the desired expression matrix.
             Must be 'matrix' or the name of an expression matrix
             under lfile['layers/'].
+        row_oriented: Boolean. If True, the returned sparse matrix
+            will be row-oriented, i.e. a scipy sparse csr_matrix.
+            Otherwise, will be a column-oriented sparse matrix.
         
     Returns:
-        A numpy array containing the expression matrix.
+        A scipy sparse matrix containing the expression matrix.
         Genes are rows, and cells are columns.
 
     Raises:
@@ -408,13 +412,19 @@ def get_expr_mat(uuid, matrix = 'matrix'):
     """
     with get_h5_conn(uuid) as lfile:
         if matrix == 'matrix':
-            mat = np.array(lfile['matrix'])
+            if row_oriented:
+                mat = scipy.sparse.csr_matrix(lfile['matrix'])
+            else:
+                mat = scipy.sparse.csc_matrix(lfile['matrix'])
         else:
             if matrix not in lfile['layers'].keys():
                 raise ValueError('matrix must be \"matrix\" or a '
                                  'valid layer name!')
             else:
-                mat = np.array(lfile[f'layers/{matrix}'])
+                if row_oriented:
+                    mat = scipy.sparse.csr_matrix(lfile[f'layers/{matrix}'])
+                else:
+                    mat = scipy.sparse.csc_matrix(lfile[f'layers/{matrix}'])
         return(mat)
 
 def get_batch_key(uuid):

@@ -318,7 +318,7 @@ in both languages, but a few are language-specific. They are described below.
 |`get_loom_filename(uuid)`|Python, R|Get the full path to the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_h5_conn(uuid)`|Python, R|Get an open HDF5 connection to the requested `expr_mat.loom` file. h5py in Python and hdf5r in R.|
 |`get_loom_conn(uuid)`|Python, R|Get an open loom connection to the requested `expr_mat.loom` file. loompy in Python and loomR in R.|
-|`get_expr_mat(uuid, matrix='matrix')`|Python, R|Get an expression matrix as a matrix from the `expr_mat.loom` file that corresponds to the UUID.|
+|`get_expr_mat(uuid, matrix='matrix')`|Python, R|Get an expression matrix as a sparse matrix from the `expr_mat.loom` file that corresponds to the UUID. Note that this function has a small difference in the Python vs the R implementation.|
 |`get_expr_mat_names(uuid)`|Python, R|Get a list of all the expression matrix names from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_cell_univ(uuid, keep_missing=True)`|Python, R|Get the internal cell-specific universal metadata as a dataframe from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_gene_univ(uuid, keep_missing=True)`|Python, R|Get the internal gene-specific universal metadata as a dataframe from the `expr_mat.loom` file that corresponds to the UUID.|
