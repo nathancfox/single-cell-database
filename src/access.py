@@ -48,17 +48,17 @@ def get_loom_filename(uuid):
     """
     df = em__.get_as_dataframe()
     if uuid not in list(df['uuid']):
-        for dir_entry in os.scandir(GC._PATH_TO_DATABASE):
+        for dir_entry in os.scandir(GC.get_PATH_TO_DATABASE()):
             if (dir_entry.name == uuid
                     and dir_entry.is_dir()
                     and 'expr_mat.loom' in os.listdir(dir_entry.path)):
                 return(os.path.join(dir_entry.path, 'expr_mat.loom'))
         raise ValueError('uuid is not valid!')
     else:
-        filename = df[df['uuid'] == uuid]['file_location'].iloc[0]
+        filename = df[df['uuid'] == uuid]['uuid'].iloc[0]
+        filename = os.path.join(GC.get_PATH_TO_DATABASE(), filename, 'expr_mat.loom')
     if not os.path.exists(filename):
         raise AssertionError('Retrieved filename does not exist!')
-    filename = os.path.join(filename, 'expr_mat.loom')
     return(filename)
 
 def get_h5_conn(uuid, write = False):

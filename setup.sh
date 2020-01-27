@@ -4,12 +4,16 @@ usage() {
   echo "Usage: ./setup.sh [-v=VERSION] [-h]"
   echo "  -v=VERSION     setup VERSION version of scdb. If omitted,"
   echo "                 the current version will be setup."
-  echo "  -h,  --help    print this help."
+  echo "  -h,            print this help."
   echo
 }
 
 if (( $# == 0 )); then
-  export PYTHONPATH="/data/single_cell_database/src/current:$PYTHONPATH"
+  if [[ $(hostname) == "dactyl.cshl.edu" ]]; then
+    export PYTHONPATH="/tyronedata/single_cell_database/src/current:$PYTHONPATH"
+  else
+    export PYTHONPATH="/data/single_cell_database/src/current:$PYTHONPATH"
+  fi
 elif (( $# == 1 )); then
   arg=$1
   if [[ ${arg:0:2} == "-v" ]]; then
@@ -24,7 +28,11 @@ elif (( $# == 1 )); then
         arg="v$arg"
       fi
       if [[ -d "/data/single_cell_database/src/$arg" ]]; then
-        export PYTHONPATH="/data/single_cell_database/src/$arg:$PYTHONPATH"
+	if [[ $(hostname) == "dactyl.cshl.edu" ]]; then
+          export PYTHONPATH="/tyronedata/single_cell_database/src/$arg:$PYTHONPATH"
+	else
+          export PYTHONPATH="/data/single_cell_database/src/$arg:$PYTHONPATH"
+	fi
       else
         echo "ERROR: $arg is not a valid version!"
       fi

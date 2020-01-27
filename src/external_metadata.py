@@ -35,7 +35,7 @@ def append_row(new_row):
     for k, v in GC._EM_COLUMN_INDEX.items():
         if (GC._EM_COLUMN_MANDATORY[k]) and (new_row[v] == ''):
             raise ValueError('Mandatory column is missing!')
-    with open(GC._PATH_TO_METADATA, 'a') as f:
+    with open(GC.get_PATH_TO_METADATA(), 'a') as f:
         # Temporarily removed because I think it's introducing a bug.
         # f.write('\n')
         for i in range(len(new_row)):
@@ -189,13 +189,13 @@ def get_new_row_input(pre_fill = None):
 
 def write_header():
     """Writes header of new external metadata file."""
-    if os.path.exists(GC._PATH_TO_METADATA):
-        raise AssertionError(f'{GC._PATH_TO_METADATA} already exists!')
+    if os.path.exists(GC.get_PATH_TO_METADATA()):
+        raise AssertionError(f'{GC.get_PATH_TO_METADATA()} already exists!')
     indices = pd.DataFrame({'keys': list(GC._EM_COLUMN_INDEX.keys()),
                             'values': list(GC._EM_COLUMN_INDEX.values())})
     indices = indices.sort_values(by = 'values')
     columns = indices['keys']
-    with open(GC._PATH_TO_METADATA, 'w') as f:
+    with open(GC.get_PATH_TO_METADATA(), 'w') as f:
         for i, k in enumerate(columns):
             f.write(k)
             if i < (len(columns) - 1):
@@ -214,14 +214,14 @@ def write_new_file(df):
     Returns: None
     Raises: None
     """
-    df.to_csv(GC._PATH_TO_METADATA,
+    df.to_csv(GC.get_PATH_TO_METADATA(),
               sep = '\t',
               header = True,
               index = False)
 
 def get_as_dataframe():
     """Gets external metadata as pandas dataframe."""
-    df = pd.read_csv(GC._PATH_TO_METADATA,
+    df = pd.read_csv(GC.get_PATH_TO_METADATA(),
                      sep = '\t',
                      header = 0,
                      index_col = None,
@@ -230,7 +230,7 @@ def get_as_dataframe():
 
 def get_shape():
     """Gets shape of external metadata."""
-    df = pd.read_csv(GC._PATH_TO_METADATA,
+    df = pd.read_csv(GC.get_PATH_TO_METADATA(),
                      sep = '\t',
                      header = 0,
                      index_col = None)
@@ -238,7 +238,7 @@ def get_shape():
 
 def get_column_names():
     """Gets list of column names of external metadata."""
-    header = pd.read_csv(GC._PATH_TO_METADATA, sep = '\t', header = None, nrows = 1)
+    header = pd.read_csv(GC.get_PATH_TO_METADATA(), sep = '\t', header = None, nrows = 1)
     header = list(header.iloc[0])
     return(header)
 
@@ -298,28 +298,28 @@ def verify_global_constants():
     """Run assertion tests on global variables.
     
     The following assertions are checked:
-        * _PATH_TO_METADATA points to an existing regular file
-        * _PATH_TO_METADATA will open successfully
+        * get_PATH_TO_METADATA() points to an existing regular file
+        * get_PATH_TO_METADATA() will open successfully
         * _EM_COLUMN_DESCRIPTIONS, _EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY
           all have the same length
         * _EM_COLUMN_DESCRIPTIONS, _EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY
           all have the same keys
-        * _PATH_TO_METADATA is not an empty file
-        * The header of _PATH_TO_METADATA has the same number of
+        * get_PATH_TO_METADATA() is not an empty file
+        * The header of get_PATH_TO_METADATA() has the same number of
           columns as keys in _EM_COLUMN_DESCRIPTIONS
-        * The header of _PATH_TO_METADATA has the same columns
+        * The header of get_PATH_TO_METADATA() has the same columns
           as keys in _EM_COLUMN_DESCRIPTIONS
-        * The header of _PATH_TO_METADATA is in the same order
+        * The header of get_PATH_TO_METADATA() is in the same order
           as the values in _EM_COLUMN_INDEX
         * The column numbers in the values of _EM_COLUMN_DESCRIPTIONS
           match the values in _EM_COLUMN_INDEX
         * The column titles in the values of _EM_COLUMN_DESCRIPTIONS
           match the keys of _EM_COLUMN_DESCRIPTIONS
     """
-    if not os.path.exists(GC._PATH_TO_METADATA):
-        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA does not exist!')
-    if not os.path.isfile(GC._PATH_TO_METADATA):
-        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA is not a '
+    if not os.path.exists(GC.get_PATH_TO_METADATA()):
+        raise AssertionError('GLOBAL VAR ERROR: get_PATH_TO_METADATA() does not exist!')
+    if not os.path.isfile(GC.get_PATH_TO_METADATA()):
+        raise AssertionError('GLOBAL VAR ERROR: get_PATH_TO_METADATA() is not a '
                              'regular file!')
 
     if len(GC._EM_COLUMN_DESCRIPTIONS) != len(GC._EM_COLUMN_INDEX):
@@ -349,24 +349,24 @@ def verify_global_constants():
                                 '_EM_COLUMN_MANDATORY have different keys!')
 
     try:
-        f = open(GC._PATH_TO_METADATA, 'r')
+        f = open(GC.get_PATH_TO_METADATA(), 'r')
     except:
-        print('GLOBAL VAR ERROR: _PATH_TO_METADATA file open failed!')
+        print('GLOBAL VAR ERROR: get_PATH_TO_METADATA() file open failed!')
         return
     with f as f:
         header = f.readline()
     if header == '':
-        raise AssertionError('GLOBAL VAR ERROR: _PATH_TO_METADATA is an empty file!') 
+        raise AssertionError('GLOBAL VAR ERROR: get_PATH_TO_METADATA() is an empty file!') 
     header = header.strip().split(sep = '\t')
     if len(header) != len(desc_keys):
         raise AssertionError('GLOBAL VAR ERROR: _EM_COLUMN_DESCRIPTIONS, '
                              '_EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY '
                              'have a different length than the header '
-                             'at _PATH_TO_METADATA!')
+                             'at get_PATH_TO_METADATA()!')
     for k in header:
         if k not in desc_keys:
             raise AssertionError('GLOBAL VAR ERROR: The header at '
-                                 '_PATH_TO_METADATA does not match the '
+                                 'get_PATH_TO_METADATA() does not match the '
                                  'keys of _EM_COLUMN_DESCRIPTIONS, '
                                  '_EM_COLUMN_INDEX, and _EM_COLUMN_MANDATORY!')
     for k, v in GC._EM_COLUMN_INDEX.items():
@@ -374,7 +374,7 @@ def verify_global_constants():
             raise AssertionError('GLOBAL VAR ERROR: The values of '
                                  '_EM_COLUMN_INDEX do not match the '
                                  'order of values in the header '
-                                 'at _PATH_TO_METADATA!')
+                                 'at get_PATH_TO_METADATA()!')
         col_desc_index = int(GC._EM_COLUMN_DESCRIPTIONS[k][:2]) - 1
         if col_desc_index != v:
             raise AssertionError('GLOBAL VAR ERROR: The column numbers '
@@ -398,7 +398,7 @@ def main():
 
 # Every time this module is run or imported, check
 # the integrity of the global constants.
-verify_global_constants()
+# verify_global_constants()
 
 if __name__ == '__main__':
     main()

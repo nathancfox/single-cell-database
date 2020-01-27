@@ -141,7 +141,7 @@ def download_files():
     global _new_uuid
     ga__.download_series_to_db(_gse_id,
                                _new_uuid,
-                               GC._PATH_TO_DATABASE,
+                               GC.get_PATH_TO_DATABASE(),
                                log = False)
 
 def add_external_metadata():
@@ -166,7 +166,6 @@ def add_external_metadata():
                      'accession': _gse_id,
                      'date_integrated': gu__.get_timestamp(mode = 'date'),
                      'uuid': _new_uuid,
-                     'file_location': os.path.join(GC._PATH_TO_DATABASE, _new_uuid)
                    }
         new_row = em__.get_new_row_input(pre_fill = pre_fill)
         colnames = em__.get_column_names()

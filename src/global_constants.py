@@ -13,10 +13,14 @@ with the constants here.
 Descriptions
 ============
 
-_PATH_TO_DATABASE:
-    The full, absolute path to the root folder of the database.
-_PATH_TO_METADATA:
-    The full, absolute path to the external metadata file.
+get_PATH_TO_DATABASE():
+    A method returning the full, absolute path to the root folder
+    of the database. It is only a function because tyrone is
+    mounted as different names on different servers.
+get_PATH_TO_METADATA():
+    A method returning the full, absolute path to the external
+    metadata file. It is only a function because tyrone is
+    mounted as different names on different servers.
 _EM_COLUMN_DESCRIPTIONS:
     A dict holding printable descriptions for each of the columns
     in the external metadata schema.
@@ -53,11 +57,20 @@ _TISSUE_LIST:
 
 LICENSE: GNU General Public License v3.0 (see LICENSE file)
 """
+from socket import getfqdn
 # These 2 are mirrored in the access.R file.
 # If you ever change these, MAKE SURE TO UPDATE
 # THE ONES IN THE access.R FILE!
-_PATH_TO_DATABASE = '/data/single_cell_database/database'
-_PATH_TO_METADATA = '/data/single_cell_database/database/external_metadata.tsv'
+def get_PATH_TO_DATABASE():
+    if getfqdn() == 'dactyl.cshl.edu':
+        return('/tyronedata/single_cell_database/database')
+    else:
+        return('/data/single_cell_database/database')
+def get_PATH_TO_METADATA():
+    if getfqdn() == 'dactyl.cshl.edu':
+        return('/tyronedata/single_cell_database/database/external_metadata.tsv')
+    else:
+        return('/data/single_cell_database/database/external_metadata.tsv')
 
 _EM_COLUMN_DESCRIPTIONS = {
     'species': 
@@ -175,17 +188,9 @@ _EM_COLUMN_DESCRIPTIONS = {
             '    This can be gotten with str(uuid), if uuid is a\n'
             '    python class uuid.UUID'
         ),
-    'file_location':
-        (
-            '14. File location\n'
-            '    A full, absolute path to the folder holding the loom\n'
-            '    file and all internal metadata for this dataset.\n'
-            '    Must end with a \'/\'.\n'
-            '    e.g. \"/data/single_cell_database/database/12345678-1234-5678-1234-567812345678/\"'
-        ),
     'internal':
         (
-            '15. Internal\n'
+            '14. Internal\n'
             '    Whether or not the dataset was scraped from a repository.\n'
             '    False if it is internally generated data.\n'
             '    Must be one of these two values: {\"True\", \"False\"}.'
@@ -205,8 +210,7 @@ _EM_COLUMN_INDEX = {
     'accession'      : 10,
     'date_integrated': 11,
     'uuid'           : 12,
-    'file_location'  : 13,
-    'internal'       : 14
+    'internal'       : 13
 }
 _EM_COLUMN_MANDATORY = {
     'species'        : True,
@@ -222,7 +226,6 @@ _EM_COLUMN_MANDATORY = {
     'accession'      : False,
     'date_integrated': True,
     'uuid'           : True,
-    'file_location'  : True,
     'internal'       : True
 }
 

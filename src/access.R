@@ -3,9 +3,21 @@
 # reading "HARDCODED CONSTANT FLAG"
 
 # HARDCODED CONSTANT FLAG
-PATH_TO_DATABASE <- "/data/single_cell_database/database"
+get_PATH_TO_DATABASE <- function() {
+    if (Sys.info()[["nodename"]] == "dactyl.cshl.edu") {
+        return("/tyronedata/single_cell_database/database")
+    } else {
+        return("/data/single_cell_database/database")
+    }
+}
 # HARDCODED CONSTANT FLAG
-PATH_TO_METADATA <- "/data/single_cell_database/database/external_metadata.tsv"
+get_PATH_TO_METADATA <- function() {
+    if (Sys.info()[["nodename"]] == "dactyl.cshl.edu") {
+        return("/tyronedata/single_cell_database/database/external_metadata.tsv")
+    } else {
+        return("/data/single_cell_database/database/external_metadata.tsv")
+    }
+}
 ARRAY_WARNING <- paste("\nWARNING: R and Python interpret binary matrices\n",
                        "in transposed ways. R uses column-major order and\n",
                        "Python uses row-major order. Because the database\n",
@@ -30,24 +42,24 @@ ARRAY_WARNING <- paste("\nWARNING: R and Python interpret binary matrices\n",
 #' @return Character vector of length 1 containing the full path to
 #'   the desired loom file.
 get_loom_filename <- function(uuid) {
-    df = read.table(PATH_TO_METADATA,
+    df = read.table(get_PATH_TO_METADATA(),
                     header = TRUE,
                     sep = "\t",
                     quote = "",
                     row.names = NULL,
                     stringsAsFactors = FALSE)
     if (!(uuid %in% df$uuid)) {
-        dir_entries <- list.dir(PATH_TO_DATABASE)
+        dir_entries <- list.dir(get_PATH_TO_DATABASE())
         for (i in seq_along(dir_entries)) {
             if (dir_entries[i] == uuid
-                    && 'expr_mat.loom' %in% list.files(file.path(PATH_TO_DATABASE, dir_entries[i]))) {
-                return(file.path(PATH_TO_DATABASE, dir_entries[i], 'expr_mat.loom'))
+                    && 'expr_mat.loom' %in% list.files(file.path(get_PATH_TO_DATABASE(), dir_entries[i]))) {
+                return(file.path(get_PATH_TO_DATABASE(), dir_entries[i], 'expr_mat.loom'))
             }
         }
         stop("uuid is not valid!")
     }
-    filename <- df[df$uuid == uuid, "file_location"]
-    filename = file.path(filename, "expr_mat.loom")
+    filename <- df[df$uuid == uuid, "uuid"]
+    filename = file.path(get_PATH_TO_DATABASE, filename, "expr_mat.loom")
     if (!(file.exists(filename))) {
         stop("Retrieved filename does not exist!")
     }
@@ -539,7 +551,7 @@ get_gene_author_annot <- function(uuid) {
 #' 
 #' @return A dataframe containing the external metadata.
 get_extern_md <- function() {
-    df <- read.table(PATH_TO_METADATA,
+    df <- read.table(get_PATH_TO_METADATA(),
                      header = TRUE,
                      sep = "\t",
                      quote = "",
@@ -554,7 +566,6 @@ get_extern_md <- function() {
     df$accession <- as.character(df$accession)
     df$date_integrated <- as.Date(df$date_integrated)
     df$uuid <- as.character(df$uuid)
-    df$file_location <- as.character(df$file_location)
     # Removed to prevent NA creation with "-1"
     # df$internal <- as.logical(df$internal)
     return(df)
