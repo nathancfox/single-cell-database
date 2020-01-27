@@ -53,12 +53,6 @@ def create_loom_file(folder_path, expr_matrix, barcodes,
             These should be human-readable gene IDs and don't
             necessarily have to be unique. Length must equal
             the number of rows in expr_matrix.
-        feat_acc: Boolean. True if the features should be
-            stored under 'Accession' in the loom file. This
-            is appropriate for unique Ensembl IDs for instance.
-            If the features are human-readable gene names that
-            may not be unique, then they will be stored under
-            'Gene', and this argument should be False.
     
     Returns: None
 

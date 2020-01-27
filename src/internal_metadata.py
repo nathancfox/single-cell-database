@@ -1175,7 +1175,7 @@ def set_cell_aa_col_desc(uuid, column, desc):
     Raises:
         ValueError: If column does not exist.
     """
-    with ac__.get_h5_conn(uuid) as lfile:
+    with ac__.get_h5_conn(uuid, write = True) as lfile:
         if column in lfile['cell_author_annot'].keys():
             if 'description' in lfile[f'cell_author_annot/{column}'].attrs.keys():
                 # Ask for overwrite
@@ -1227,7 +1227,7 @@ def set_gene_univ_col_desc(uuid, column, desc):
     Raises:
         ValueError: If column does not exist.
     """
-    with ac__.get_h5_conn(uuid) as lfile:
+    with ac__.get_h5_conn(uuid, write = True) as lfile:
         if column in lfile['row_attrs'].keys():
             if 'description' in lfile[f'row_attrs/{column}'].attrs.keys():
                 # Ask for overwrite
@@ -1279,7 +1279,7 @@ def set_gene_aa_col_desc(uuid, column, desc):
     Raises:
         ValueError: If column does not exist.
     """
-    with ac__.get_h5_conn(uuid) as lfile:
+    with ac__.get_h5_conn(uuid, write = True) as lfile:
         if column in lfile['gene_author_annot'].keys():
             if 'description' in lfile[f'gene_author_annot/{column}'].attrs.keys():
                 # Ask for overwrite
