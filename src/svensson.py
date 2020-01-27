@@ -9,8 +9,8 @@ LICENSE: GNU General Public License v3.0 (see LICENSE file)
 # sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import pandas as pd
 import datetime as dt
-import geo_access as ga__
-import general_utils as gu__
+from . import geo_access as ga__
+from . import general_utils as gu__
 
 def download_devel_data():
     """Downloads development data.
