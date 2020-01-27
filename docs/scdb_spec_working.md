@@ -182,7 +182,7 @@ are named the UUID associated with the entry, found in the external metadata. So
 
 ```
 $ pwd
-/data/single_cell_database
+/data/single_cell_database/database
 $ ls *
 external_metadata.tsv  notes.tsv
 
@@ -190,11 +190,12 @@ external_metadata.tsv  notes.tsv
 expr_mat.loom
 ```
 
-Each folder must contain a file called `expr_mat.loom`. This file contains the expression matrices
-and all internal metadata for that entry. It is an HDF5 file that conforms to the loom file
-specification, version 3.0, as published by Sten Linnarsson's lab, albeit with a few small
-additions that don't violate the loom file specification rules. The loom file specification is
-reproduced in the appendix.
+Each folder must contain a file called `expr_mat.loom` and may contain other files, though
+this is discouraged. Often, the SOFT file for the GEO Series will be retained. The
+`expr_mat.loom` file contains the expression matrices and all internal metadata for that entry.
+It is an HDF5 file that conforms to the loom file specification, version 3.0, as published by
+Sten Linnarsson's lab, albeit with a few small additions that don't violate the loom file
+specification rules. The loom file specification is reproduced in the appendix.
 
 The basic summary is that an HDF5 file is organized and accessible as a file tree
 inside the object. All items in an HDF5 file are either Groups or Datasets. Groups can hold other
@@ -242,17 +243,17 @@ schema is described below. Throughout, the `expr_mat.loom` file will be referred
 
 Each expression matrix is stored as a single HDF5 Dataset. Every expression matrix must be stored
 with genes in the rows and cells in the columns. The raw read counts, if available, should
-be stored in `lfile['/matrix']`. If not available, any other expression matrix may be stored in
-`lfile['/matrix']`. The expression matrix stored in `lfile['/matrix']` MUST be the first one
-described in the external metadata "count_format" field (e.g. if the "count_format" field contains
-"tpm;cpm", then the "tpm" expression matrix must be stored at `lfile['/matrix']`. All other
-expression matrices should be stored as HDF5 Datasets under `lfile['/layers/']`. They must be named
-their corresponding value in the external metadata "count_format" field. However, if they are
-designated as "OTHER" in the external metadata "count_format" field, they may be named anything
-sensible that could be identified by reading the original publication, but is not one of the
-pre-determined values (e.g. it could be named "norm_500" but not "cpm"). Expression matrices stored
-under `lfile['/layers/']` cannot be named "matrix". Expression matrices May be named "counts" or
-"logcounts", but this is HEAVILY discouraged because of potential confusing imports into
+be stored in `lfile['/matrix']`. If raw read counts are not available, any other expression matrix
+may be stored in `lfile['/matrix']`. The expression matrix stored in `lfile['/matrix']` MUST be
+the first one described in the external metadata "count_format" field (e.g. if the "count_format"
+field contains "tpm;cpm", then the "tpm" expression matrix must be stored at `lfile['/matrix']`.
+All other expression matrices should be stored as HDF5 Datasets under `lfile['/layers/']`. They
+must be named their corresponding value in the external metadata "count_format" field. However, if
+they are designated as "OTHER" in the external metadata "count_format" field, they may be named
+anything sensible that could be identified by reading the original publication, but is not one of
+the pre-determined values (e.g. it could be named "norm_500" but not "cpm"). Expression matrices
+stored under `lfile['/layers/']` cannot be named "matrix". Expression matrices May be named
+"counts" or "logcounts", but this is **heavily** discouraged because of potential confusing imports into
 R SingleCellExperiment objects.
 
 #### Internal Universal Metadata <a name="internal_universal_metadata_structure"></a>
@@ -324,7 +325,32 @@ in both languages, but a few are language-specific. They are described below.
 |`get_anndata(uuid, **kwargs)`|Python|Get the entire entry corresponding to the UUID as an AnnData object.|
 |`get_sce(uuid, assay_for_matrix='counts', counts_assay=NULL, logcounts_assay=NULL`|R|Get the entire entry corresponding to the UUID as a SingleCellExperiment object.|
 
-They all have documentation that will not be described here.
+They all have internal documentation. Python code have Google-style docstrings and R functions have
+roxygen style function documentation. They are stored in the codebases under
+`/data/single_cell_database/src/` as `access.py` and `access.R`. To use the access code, follow
+these directions:
+
+### Access in Python
+
+The access code in Python is available as an importable Python package called `scdb`. To use it,
+the `setup.sh` script must be sourced. This adds the correct folder to your `PYTHONPATH`
+environment variable, allowing you to import the correct version of the access code. To use the
+`setup.sh`, just run `source /data/single_cell_database/src/setup.sh`. This will add the latest
+version of the access code to your `PYTHONPATH`. If you want to use a different version, just
+pass a `-v=VERSION` flag. A usage string is available via the `-h` flag. This sourcing can
+be added to your `.bashrc`. After the source command is run, the access functions are exposed
+as `import scdb`. e.g. `import scdb; emdf = scdb.get_extern_md()`.
+
+**WARNING:** This setup script does not remove anything from your `PYTHONPATH`. If you use it
+multiple times in a single session, it will prepend multiple paths to your `PYTHONPATH`.
+
+### Access in R
+
+The R code is not a formal package. Instead it is a single R script containing all the access
+functions. To use, simply run `source("/data/single_cell_database/src/VERSION/scdb/access.R")`
+where `VERSION` is the version of the access functions you wish to use. This will import all
+functions into your current R session. If `VERSION` is "current", it will import the latest
+access functions. Otherwise, a valid version must be used.
 
 ### Dependencies <a name="dependencies"></a>
 
