@@ -5,7 +5,7 @@ including the schema of the data, the structure of the stored data, the process 
 the process of storing data, and the future plans.
 
 ```
-Version : WORKING 0.2
+Version : WORKING 0.3
 Date    : 2019-01-17
 Author  : Nathan Fox
 ```
@@ -30,9 +30,16 @@ Author  : Nathan Fox
             1. [Cell-Specific Internal Author Annotated Metadata](#cell_specific_internal_author_annotated_metadata_structure)
             2. [Gene-Specific Internal Author Annotated Metadata](#gene_specific_internal_author_annotated_metadata_structure)
         4. [External Metadata](#external_metadata_structure)
-4. [Appendix](#appendix)
-    1. [Tissue List](#tissue_list)
-    2. [Loom File Specification](#loom_file_specification)
+4. [Accessing the SCDB](#accessing_the_scdb)
+    1. [Access in Python](#access_in_python)
+    2. [Access in R](#access_in_r)
+    3. [Dependencies](#dependencies)
+5. [Adding Entries to the SCDB](#adding_entries_to_the_scdb)
+6. [Future Directions](#future_directions)
+7. [Appendix](#appendix)
+    1. [Quickstart Description](#quickstart_description)
+    2. [Tissue List](#tissue_list)
+    3. [Loom File Specification](#loom_file_specification)
 
 ## Database Conceptual Schema <a name="database_conceptual_schema"></a>
 
@@ -330,7 +337,7 @@ roxygen style function documentation. They are stored in the codebases under
 `/data/single_cell_database/src/` as `access.py` and `access.R`. To use the access code, follow
 these directions:
 
-### Access in Python
+### Access in Python <a name="access_in_python"></a>
 
 The access code in Python is available as an importable Python package called `scdb`. To use it,
 the `setup.sh` script must be sourced. This adds the correct folder to your `PYTHONPATH`
@@ -344,7 +351,7 @@ as `import scdb`. e.g. `import scdb; emdf = scdb.get_extern_md()`.
 **WARNING:** This setup script does not remove anything from your `PYTHONPATH`. If you use it
 multiple times in a single session, it will prepend multiple paths to your `PYTHONPATH`.
 
-### Access in R
+### Access in R <a name="access_in_r"></a>
 
 The R code is not a formal package. Instead it is a single R script containing all the access
 functions. To use, simply run `source("/data/single_cell_database/src/VERSION/scdb/access.R")`
@@ -457,6 +464,30 @@ versions of the SCDB and this specification.
   until needed, but will likely be needed eventually.
 
 ## Appendix <a name="appendix"></a>
+
+### Quickstart Description <a name="quickstart_description"></a>
+
+This is a quick description for understanding the general layout of the database without minor
+details, intended as a way for advanced users to quickly get their bearings without having to
+read the specification cover to cover.
+
+The database consists of single-cell RNA-seq datasets. Each entry is a single dataset. Each entry
+has a single augmented loom file and a single entry in a tabular entry-level metadata file. Each
+entry also has a unique UUID. The entry-level metadata (external metadata) can be gotten as a
+dataframe and parsed to return a list of desired UUIDs. All other access functions take a single
+UUID as an argument.
+
+Each loom file is an HDF5 file. The expression data is stored as a genes x cells 2-D Dataset
+at `matrix`. All other matrices (e.g. normalized counts) are stored as Datasets under the
+Group `layers`. Cell-specific and gene-specific metadata (internal metadata) are stored as
+1-D datasets under the Groups `col_attrs` and `row_attrs` respectively. They are universally
+named and comparable across datasets. Other internal metadata are stored as 1-D datasets
+under the Groups `cell_author_annot` and `gene_author_annot`. These are internal metadata dumped
+directly from the publication and not processed. This means that they are not universally named
+or comparable across datasets.
+
+Details of the external and internal metadata schema are described above. Details of getting
+started with access are also described above.
 
 ### Tissue List <a name="tissue_list"></a>
 
