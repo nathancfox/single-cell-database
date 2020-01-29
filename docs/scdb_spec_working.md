@@ -165,11 +165,12 @@ The database is stored in a single folder on the Gillis Lab server, `tyrone`, at
 
 Inside `src/`, there are multiple folders, each corresponding to a version of the code providing
 database access. They are all named `vVERSION_NUMBER` (e.g. `v0.2`). There is also a symbolic
-link named `current` that links to the latest version. There is also a file called `setup.sh`.
-This is a bash script that should be "sourced" in order to provide import access to the
-Python code. It allows specifying a specific version. Each version contains a Python package
-called `scdb`. `scdb` also contains a R script called `access.R` that provides similar
-functions, but in R.
+link named `current` that links to the latest version, and a version named `devel` that may be
+changed without warning. Additionally, there is a file called `setup`. This is a bash script that
+should be "sourced" in order to provide import access to the Python code. It **must** be "sourced"
+and not run, in order to change environment variables (i.e. `source setup` not `./setup`). It allows
+specifying a specific version. Each version contains a Python package called `scdb`. `scdb` also
+contains a R script called `access.R` that provides similar functions, but in R.
 
 Inside `database/`, there are 2 files and `n` folders, where `n` is
 the number of entries in the database. There should be no other files or folders in this
@@ -339,13 +340,14 @@ these directions:
 ### Access in Python <a name="access_in_python"></a>
 
 The access code in Python is available as an importable Python package called `scdb`. To use it,
-the `setup.sh` script must be sourced. This adds the correct folder to your `PYTHONPATH`
+the `setup` script must be sourced. This adds the correct folder to your `PYTHONPATH`
 environment variable, allowing you to import the correct version of the access code. To use the
-`setup.sh`, just run `source /data/single_cell_database/src/setup.sh`. This will add the latest
-version of the access code to your `PYTHONPATH`. If you want to use a different version, just
-pass a `-v=VERSION` flag. A usage string is available via the `-h` flag. This sourcing can
-be added to your `.bashrc`. After the source command is run, the access functions are exposed
-as `import scdb`. e.g. `import scdb; emdf = scdb.get_extern_md()`.
+`setup` script, just run `source /data/single_cell_database/src/setup -v=current`. This will add
+the latest stable version of the access code to your `PYTHONPATH`. If you want to use a different
+version, just pass a `-v=VERSION` flag. Note that this script **must** be sourced and not run as
+a normal shell script (i.e. `source setup` not `./setup`). A usage string is available via the
+`-h` flag. This sourcing can be added to your `.bashrc`. After the source command is run, the access
+functions are exposed as `import scdb`. e.g. `import scdb; emdf = scdb.get_extern_md()`.
 
 **WARNING:** This setup script does not remove anything from your `PYTHONPATH`. If you use it
 multiple times in a single session, it will prepend multiple paths to your `PYTHONPATH`.
