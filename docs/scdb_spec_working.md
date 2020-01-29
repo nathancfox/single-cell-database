@@ -290,7 +290,11 @@ The internal author annotated metadata for cells is stored in `lfile['/cell_auth
 field is stored as a separate HDF5 Dataset, named the name of the field. Each Dataset must be a 1-D
 array with the same length as the number of cells in the entry. If present, the field "description"
 attribute may be stored as an HDF5 Attribute named "description" attached to the relevant HDF5
-Dataset. It must be a single scalar string containing the "description".
+Dataset. It must be a single scalar string containing the "description". The Group
+`lfile['/cell_author_annot']` must have an HDF5 Attribute named "column\_order". This is a
+'|'-delimited list of column names indicating the order they were in when they were stored
+(e.g. cluster|plate|mouse). If there are no author annotated columns, this attribute must still
+exist, but should be an empty string.
 
 ##### Gene-Specific Internal Author Annotated Metadata <a name="gene_specific_internal_author_annotated_metadata_structure"></a>
 
@@ -300,7 +304,11 @@ The internal author annotated metadata for genes is stored in `lfile['/gene_auth
 field is stored as a separate HDF5 Dataset, named the name of the field. Each Dataset must be a 1-D
 array with the same length as the number of genes in the entry. If present, the field "description"
 attribute may be stored as an HDF5 Attribute named "description" attached to the relevant HDF5
-Dataset. It must be a single scalar string containing the "description".
+Dataset. It must be a single scalar string containing the "description". The Group
+`lfile['/gene_author_annot']` must have an HDF5 Attribute named "column\_order". This is a
+'|'-delimited list of column names indicating the order they were in when they were stored
+(e.g. id|highlyvariable|marker). If there are no author annotated columns, this attribute must still
+exist, but should be an empty string.
 
 #### External Metadata <a name="external_metadata_structure"></a>
 
@@ -337,6 +345,11 @@ roxygen style function documentation. They are stored in the codebases under
 `/data/single_cell_database/src/` as `access.py` and `access.R`. To use the access code, follow
 these directions:
 
+The code is versioned and stored in separat version folders. All versions are of the format
+`vVERSION_NUMBER` (e.g. v0.2), except the `devel` version, which is the newest version. It may
+be updated at any time without warning and is not guaranteed to work. The newest stable version
+can be gotten with the `current` version.
+
 ### Access in Python <a name="access_in_python"></a>
 
 The access code in Python is available as an importable Python package called `scdb`. To use it,
@@ -357,8 +370,7 @@ multiple times in a single session, it will prepend multiple paths to your `PYTH
 The R code is not a formal package. Instead it is a single R script containing all the access
 functions. To use, simply run `source("/data/single_cell_database/src/VERSION/scdb/access.R")`
 where `VERSION` is the version of the access functions you wish to use. This will import all
-functions into your current R session. If `VERSION` is "current", it will import the latest
-access functions. Otherwise, a valid version must be used.
+functions into your current R session.
 
 ### Dependencies <a name="dependencies"></a>
 
