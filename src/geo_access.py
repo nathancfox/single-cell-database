@@ -157,15 +157,29 @@ def get_series_suppl_files(gse_id, path):
     ftp_url = get_series_suppl_url(gse_id)
     bash_curl_script = ('wget -q --no-parent --recursive --level=1 '
                        f'--no-directories -P {path} \"{ftp_url}\"')
-    bash_gunzip_script = (f'gunzip {path}*gz')
+    # bash_gunzip_script = (f'gunzip {path}*gz')
+    # random_tag = gu__.get_uuid()
+    # with open(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh', 'w') as f:
+    #     f.write(bash_curl_script)
+    #     f.write('\n')
+    #     f.write(bash_gunzip_script)
+    #     f.write('\n')
+    # os.system(f'bash /tmp/{random_tag}_get_series_suppl_file_temp.sh')
+    # os.remove(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh')
     random_tag = gu__.get_uuid()
     with open(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh', 'w') as f:
         f.write(bash_curl_script)
         f.write('\n')
-        f.write(bash_gunzip_script)
-        f.write('\n')
     os.system(f'bash /tmp/{random_tag}_get_series_suppl_file_temp.sh')
     os.remove(f'/tmp/{random_tag}_get_series_suppl_file_temp.sh')
+    # Extract anything in a tar archive before gunzipping
+    for dir_entry in os.scandir(path):
+        tar_extensions = ('.tar', '.tar.gz', '.tar.bz2', '.tar.xz')
+        if dir_entry.name.endswith(tar_extensions):
+            gu__.extract_tar(dir_entry.path, outpath = path)
+    for dir_entry in os.scandir(path):
+        if dir_entry.name.endswith('.gz'):
+            gu__.gunzip(dir_entry.path, remove = True)
 
 def build_new_entry_folder(path, new_uuid):
     """Builds a folder for a new entry in the database.

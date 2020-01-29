@@ -13,6 +13,7 @@ import uuid
 import os
 import gzip
 import shutil
+import tarfile
 import pandas as pd
 
 def get_timestamp(mode = 'both', long = True):
@@ -95,6 +96,26 @@ def gunzip(files, remove = True):
                 shutil.copyfileobj(f_in, f_out)
         if remove:
             os.remove(os.path.join(path, filename)) 
+        
+def extract_tar(tar_file, outpath = "", remove = True):
+    with tarfile.open(tar_file) as tar:
+        tar_member = tar.next()
+        skipped_members = []
+        while True:
+            if tar_member is None:
+                break
+            forbidden_strings = ('..', '/')
+            if any(forb in tar_member.name for forb in forbidden_strings):
+                skipped_members.append(tar_member.name)
+                continue
+            else:
+                tar.extract(tar_member, path = outpath)
+            tar_member = tar.next()
+    if remove:
+        os.remove(tar_file)
+    for sm in skipped_members:
+        print(f'WARNING: {sm} not extracted due to potentially dangerous '
+               'filename. Please extract manually!')
     
 def pretty_str_list(list, width = 50, indent = '',
                     one_per_line = False): 
