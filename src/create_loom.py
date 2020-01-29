@@ -87,6 +87,8 @@ def create_loom_file(folder_path, expr_matrix, barcodes,
         # Add edits to the loom file specification
         lfile.create_group('cell_author_annot')
         lfile.create_group('gene_author_annot')
+        lfile['cell_author_annot'].attrs['column_order'] = ''
+        lfile['gene_author_annot'].attrs['column_order'] = ''
 
 def get_expr_matrix_from_cellranger(path, prefix):
     """Gets expression matrix, barcodes, features from Cell Ranger.
@@ -96,6 +98,9 @@ def get_expr_matrix_from_cellranger(path, prefix):
            matrix.
         2. A numpy ndarray holding the barcodes
         3. A numpy ndarray holding the features
+    However, if there is additional information in the
+    barcodes and features files, a pandas dataframe is returned
+    instead of a numpy ndarray.
     Expects to receive the path to the folder holding the
     actual barcodes.tsv, features.tsv, matrix.mtx files.
     Can handle gzipped versions (e.g. barcodes.tsv.gz) and
@@ -110,8 +115,16 @@ def get_expr_matrix_from_cellranger(path, prefix):
         A tuple with 3 members:
             1. A scipy sparse COO matrix holding the expression
                matrix. Barcodes = Rows; Features = Columns
-            2. A numpy ndarray holding the barcodes
-            3. A numpy ndarray holding the features
+            2. If the barcodes.tsv file only held the barcodes,
+               a numpy ndarray holding the barcodes is returned.
+               If there was any additional information, a pandas
+               dataframe is returned instead and an alert
+               is printed.
+            3. If the features.tsv file only held the features,
+               a numpy ndarray holding the features is returned.
+               If there was any additional information, a pandas
+               dataframe is returned instead and an alert
+               is printed.
     
     Raises:
         FileNotFoundError: If any of the expected files are not
@@ -122,43 +135,51 @@ def get_expr_matrix_from_cellranger(path, prefix):
     feature_file = ''
     matrix_file = ''
     if prefix + 'barcodes.tsv' in files:
-        barcode_file = os.path.join(path, prefix, 'barcodes.tsv')
+        barcode_file = os.path.join(path, prefix + 'barcodes.tsv')
     elif prefix + 'barcodes.tsv.gz' in files:
-        gu__.gunzip(os.path.join(path, prefix, 'barcodes.tsv.gz'))
-        barcode_file = os.path.join(path, prefix, 'barcodes.tsv')
+        gu__.gunzip(os.path.join(path, prefix + 'barcodes.tsv.gz'))
+        barcode_file = os.path.join(path, prefix + 'barcodes.tsv')
     else:
         raise FileNotFoundError('barcodes file not found! Must be named '
                                 '*barcodes.tsv or *barcodes.tsv.gz')
 
     if prefix + 'features.tsv' in files:
-        feature_file = os.path.join(path, prefix, 'features.tsv')
+        feature_file = os.path.join(path, prefix + 'features.tsv')
     elif prefix + 'features.tsv.gz' in files:
-        gu__.gunzip(os.path.join(path, prefix, 'features.tsv.gz'))
-        feature_file = os.path.join(path, prefix, 'features.tsv')
+        gu__.gunzip(os.path.join(path, prefix + 'features.tsv.gz'))
+        feature_file = os.path.join(path, prefix + 'features.tsv')
     elif prefix + 'genes.tsv' in files:
-        feature_file = os.path.join(path, prefix, 'genes.tsv')
+        feature_file = os.path.join(path, prefix + 'genes.tsv')
     elif prefix + 'genes.tsv.gz' in files:
-        gu__.gunzip(os.path.join(path, prefix, 'genes.tsv.gz'))
-        feature_file = os.path.join(path, prefix, 'genes.tsv')
+        gu__.gunzip(os.path.join(path, prefix + 'genes.tsv.gz'))
+        feature_file = os.path.join(path, prefix + 'genes.tsv')
     else:
         raise FileNotFoundError('features file not found! Must be named '
                                 '*features.tsv, *features.tsv.gz, *genes.tsv, '
                                 'or *genes.tsv.gz')
 
     if prefix + 'matrix.mtx' in files:
-        matrix_file = os.path.join(path, prefix, 'matrix.mtx')
+        matrix_file = os.path.join(path, prefix + 'matrix.mtx')
     elif prefix + 'matrix.mtx.gz' in files:
-        gu__.gunzip(os.path.join(path, prefix, 'matrix.mtx.gz'))
-        matrix_file = os.path.join(path, prefix, 'matrix.mtx')
+        gu__.gunzip(os.path.join(path, prefix + 'matrix.mtx.gz'))
+        matrix_file = os.path.join(path, prefix + 'matrix.mtx')
     else:
         raise FileNotFoundError('matrix file not found! Must be named '
                                 '*matrix.mtx or *matrix.mtx.gz')
 
     mat = scipy.io.mmread(matrix_file)
     features_df = pd.read_csv(feature_file, sep = '\t', header = None)
-    features = np.array(features_df.iloc[:, 0])
+    if len(features_df.columns) > 1:
+        print('ALERT: features has extra columns')
+        features = features_df
+    else:
+        features = np.array(features_df.iloc[:, 0])
     barcodes_df = pd.read_csv(barcode_file, sep = '\t', header = None)
-    barcodes = np.array(barcodes_df.iloc[:, 0])
+    if len(barcodes_df.columns) > 1:
+        print('ALERT: barcodes has extra columns')
+        barcodes = barcodes_df
+    else:
+        barcodes = np.array(barcodes_df.iloc[:, 0])
     return(mat, barcodes, features)
 
 def get_expr_matrix_from_csv(path, rows = 'genes', **kwargs):

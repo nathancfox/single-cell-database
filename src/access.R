@@ -53,7 +53,7 @@ get_loom_filename <- function(uuid) {
                     row.names = NULL,
                     stringsAsFactors = FALSE)
     if (!(uuid %in% df$uuid)) {
-        dir_entries <- list.dir(get_PATH_TO_DATABASE())
+        dir_entries <- list.dirs(get_PATH_TO_DATABASE())
         for (i in seq_along(dir_entries)) {
             if (dir_entries[i] == uuid
                     && 'expr_mat.loom' %in% list.files(file.path(get_PATH_TO_DATABASE(), dir_entries[i]))) {
@@ -321,22 +321,20 @@ get_cell_univ <- function(uuid, keep_missing = TRUE) {
             }
         }
     }
-    if (ncol(col_data) == 0) {
-        col_data <- NULL
-    } else {
-        # HARDCODED CONSTANT FLAG
-        column_order <- c('cluster',
-                          'species',
-                          'tissue',
-                          'source_organism',
-                          'sex',
-                          'condition',
-                          'batch',
-                          'uuid')
-        column_order <- column_order[column_order %in% colnames(col_data)]
+    # HARDCODED CONSTANT FLAG
+    column_order <- c('cluster',
+                      'species',
+                      'tissue',
+                      'source_organism',
+                      'sex',
+                      'condition',
+                      'batch',
+                      'uuid')
+    column_order <- column_order[column_order %in% colnames(col_data)]
+    if (length(column_order) > 1) {
         col_data <- col_data[, column_order]
-        rownames(col_data) <- lfile[["col_attrs/CellID"]][ ]
     }
+    rownames(col_data) <- lfile[["col_attrs/CellID"]][ ]
     lfile$close_all()
     return(col_data)
 }
@@ -373,8 +371,8 @@ get_gene_univ <- function(uuid, keep_missing = TRUE) {
                                   ncol = 0))
     skip_col <- c()
     if ("Accession" %in% row_keys) {
-        if (length(lfile[["row_attrs/Accession"]])
-                == length(unique(lfile[["row_attrs/Accession"]]))) {
+        if (length(lfile[["row_attrs/Accession"]][ ])
+                == length(unique(lfile[["row_attrs/Accession"]][ ]))) {
             index <- "Accession"
             skip_col <- c("Accession", skip_col)
         } else {
@@ -382,8 +380,8 @@ get_gene_univ <- function(uuid, keep_missing = TRUE) {
             index <- ""
         }
    } else if("Gene" %in% row_keys) {
-        if (length(lfile[["row_attrs/Gene"]])
-                == length(unique(lfile[["row_attrs/Gene"]]))) {
+        if (length(lfile[["row_attrs/Gene"]][ ])
+                == length(unique(lfile[["row_attrs/Gene"]][ ]))) {
             index <- "Gene"
             skip_col <- c("Gene", skip_col)
         } else {
@@ -404,40 +402,38 @@ get_gene_univ <- function(uuid, keep_missing = TRUE) {
                     row_data[row_keys[i]] <- lfile[[k]][ ]
                 }
             } else {
-                row_data[row_keys[i]] <- lfile[[k]][ ]
+                row_data[, row_keys[i]] <- lfile[[k]][ ]
             }
         }
     }
-    if (ncol(row_data) == 0) {
-        row_data <- NULL
-    } else {
-        add_acc <- FALSE
-        add_gene <- FALSE
-        if ("Accession" %in% colnames(row_data)) {
-            add_acc <- TRUE
-        }
-        if ("Gene" %in% colnames(row_data)) {
-            add_gene <- TRUE
-        }
-        columns <- colnames(row_data)
-        columns <- columns[!(columns %in% c("Accession", "Gene"))]
-        # HARDCODED CONSTANT FLAG
-        column_order <- c()
-        column_order <- column_order[column_order %in% colnames(row_data)]
-        if (add_gene) {
-            column_order <- c("Gene", column_order)
-        }
-        if (add_acc) {
-            column_order <- c("Accession", column_order)
-        }
-        if (index == "Gene") {
-            rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
-        } else if (index == "Accession") {
-            rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
-        } else {
-            # Do Nothing and let the rownames be numbers
-        }
+    add_acc <- FALSE
+    add_gene <- FALSE
+    if ("Accession" %in% colnames(row_data)) {
+        add_acc <- TRUE
+    }
+    if ("Gene" %in% colnames(row_data)) {
+        add_gene <- TRUE
+    }
+    columns <- colnames(row_data)
+    columns <- columns[!(columns %in% c("Accession", "Gene"))]
+    # HARDCODED CONSTANT FLAG
+    column_order <- c()
+    column_order <- column_order[column_order %in% colnames(row_data)]
+    if (add_gene) {
+        column_order <- c("Gene", column_order)
+    }
+    if (add_acc) {
+        column_order <- c("Accession", column_order)
+    }
+    if (length(column_order) > 1) {
         row_data <- row_data[, column_order]
+    }
+    if (index == "Gene") {
+        rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
+    } else if (index == "Accession") {
+        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+    } else {
+        # Do Nothing and let the rownames be numbers
     }
     lfile$close_all()
     return(row_data)
@@ -474,12 +470,10 @@ get_cell_author_annot <- function(uuid) {
         }
     }
     rownames(col_data) <- lfile[["col_attrs/CellID"]][ ]
-    if (ncol(col_data) == 0) {
-        col_data <- NULL
-    } else {
-        column_order <- hdf5r::h5attr(lfile[["cell_author_annot"]],
-                                      "column_order")
-        column_order <- strsplit(column_order, "|", fixed = TRUE)[[1]]
+    column_order <- hdf5r::h5attr(lfile[["cell_author_annot"]],
+                                  "column_order")
+    column_order <- strsplit(column_order, "|", fixed = TRUE)[[1]]
+    if (length(column_order) > 1) {
         col_data <- col_data[, column_order]
     }
     lfile$close_all()
@@ -499,6 +493,7 @@ get_cell_author_annot <- function(uuid) {
 get_gene_author_annot <- function(uuid) {
     lfile <- get_h5_conn(uuid, warning = FALSE)
     row_keys <- names(lfile[["gene_author_annot"]])
+    univ_row_keys <- names(lfile[["row_attrs"]])
     # Initializes with the number of columns in the matrix,
     # even though the loom file stores the expression matrix
     # as genes x cells, and the SingleCellExperiment stores
@@ -518,17 +513,17 @@ get_gene_author_annot <- function(uuid) {
             row_data[row_keys[i]] <- lfile[[k]][ ]
         }
     }
-    if ("Accession" %in% row_keys) {
-        if (length(lfile[["row_attrs/Accession"]])
-                == length(unique(lfile[["row_attrs/Accession"]]))) {
+    if ("Accession" %in% univ_row_keys) {
+        if (length(lfile[["row_attrs/Accession"]][ ])
+                == length(unique(lfile[["row_attrs/Accession"]][ ]))) {
             rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
         } else {
             warning('\"Accession\" has non-unique values!')
             # Do Nothing and let the rownames be numbers
         }
-   } else if("Gene" %in% row_keys) {
-        if (length(lfile[["row_attrs/Gene"]])
-                == length(unique(lfile[["row_attrs/Gene"]]))) {
+   } else if("Gene" %in% univ_row_keys) {
+        if (length(lfile[["row_attrs/Gene"]][ ])
+                == length(unique(lfile[["row_attrs/Gene"]][ ]))) {
             rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
         } else {
             # Do Nothing and let the rownames be numbers
@@ -537,12 +532,10 @@ get_gene_author_annot <- function(uuid) {
         warning("\"Gene\" and \"Accession\" are both missing!")
         # Do Nothing and let the rownames be numbers
     }
-    if (ncol(row_data) == 0) {
-        row_data <- NULL
-    } else {
-        column_order <- hdf5r::h5attr(lfile[["gene_author_annot"]],
-                                      "column_order")
-        column_order <- strsplit(column_order, "|", fixed = TRUE)[[1]]
+    column_order <- hdf5r::h5attr(lfile[["gene_author_annot"]],
+                                  "column_order")
+    column_order <- strsplit(column_order, "|", fixed = TRUE)[[1]]
+    if (length(column_order) > 1) {
         row_data <- row_data[, column_order]
     }
     lfile$close_all()

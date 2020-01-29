@@ -354,14 +354,10 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
                         col_data[key] = lfile[key_path][:]
                 else:
                     col_data[key] = lfile[key_path][:]
-        if col_data.shape[1] == 0:
-            col_data = None
-            return(col_data)
-        else:
-            column_order = sorted(col_data.columns,
-                                key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
-            col_data = col_data[column_order]
-            return(col_data)
+        column_order = sorted(col_data.columns,
+                            key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
+        col_data = col_data[column_order]
+        return(col_data)
 
 def get_gene_int_md_univ(uuid, keep_missing = True):
     """Gets the gene universal metadata.
@@ -421,29 +417,26 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
                         row_data[key] = lfile[key_path][:]
                 else:
                     row_data[key] = lfile[key_path][:]
-        if row_data.shape[1] == 0:
-            row_data = None
-        else:
-            # Accession and Gene are handled separately because they
-            # aren't handled with the global constants, and so they
-            # can't be sorted by their index.
-            add_acc = False
-            add_gene = False
-            if 'Accession' in list(row_data.columns):
-                add_acc = True
-            if 'Gene' in list(row_data.columns):
-                add_gene = True
-            columns = list(filter(lambda x: x not in ['Accession', 'Gene'],
-                                  row_data.columns))
-            column_order = sorted(columns,
-                                  key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
-            # Prepended in reverse order to ensure that
-            # Accession will come before Gene
-            if add_gene:
-                column_order = ['Gene'] + column_order
-            if add_acc:
-                column_order = ['Accession'] + column_order
-            row_data = row_data[column_order]
+        # Accession and Gene are handled separately because they
+        # aren't handled with the global constants, and so they
+        # can't be sorted by their index.
+        add_acc = False
+        add_gene = False
+        if 'Accession' in list(row_data.columns):
+            add_acc = True
+        if 'Gene' in list(row_data.columns):
+            add_gene = True
+        columns = list(filter(lambda x: x not in ['Accession', 'Gene'],
+                                row_data.columns))
+        column_order = sorted(columns,
+                                key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
+        # Prepended in reverse order to ensure that
+        # Accession will come before Gene
+        if add_gene:
+            column_order = ['Gene'] + column_order
+        if add_acc:
+            column_order = ['Accession'] + column_order
+        row_data = row_data[column_order]
         return(row_data)
 
 def get_cell_int_md_author_annot(uuid):
@@ -469,11 +462,8 @@ def get_cell_int_md_author_annot(uuid):
             key_path = 'cell_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
                 col_data[key] = lfile[key_path][:]
-        if col_data.shape[1] == 0:
-            col_data = None
-        else:
-            col_order = lfile['cell_author_annot'].attrs['column_order'].split('|')
-            col_data = col_data[col_order]
+        col_order = lfile['cell_author_annot'].attrs['column_order'].split('|')
+        col_data = col_data[col_order]
         return(col_data)
 
 def get_gene_int_md_author_annot(uuid):
@@ -522,11 +512,8 @@ def get_gene_int_md_author_annot(uuid):
             key_path = 'gene_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
                 row_data[key] = lfile[key_path][:]
-        if row_data.shape[1] == 0:
-            row_data = None
-        else:
-            col_order = lfile['gene_author_annot'].attrs['column_order'].split('|')
-            row_data = row_data[col_order]
+        col_order = lfile['gene_author_annot'].attrs['column_order'].split('|')
+        row_data = row_data[col_order]
         return(row_data)
 
 def set_cell_int_md_author_annot(uuid, df):
