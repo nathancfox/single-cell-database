@@ -806,8 +806,27 @@ get_expr_mat <- function(uuid, matrix = "matrix") {
             return_mat <- as(t(lfile[[key]][ , ]), "dgCMatrix")
         }
     }
-    # TODO: Add rownames and column names. Requires smart parsing
-    #       of Gene vs Accession
+    colnames(return_mat) <- lfile[["col_attrs/CellID"]][ ]
+    row_keys <- names(lfile[["row_attrs"]])
+    if ("Accession" %in% row_keys) {
+        if (length(lfile[["row_attrs/Accession"]][ ])
+                == length(unique(lfile[["row_attrs/Accession"]][ ]))) {
+            rownames(return_mat) <- lfile[["row_attrs/Accession"]][ ]
+        } else {
+            warning('\"Accession\" has non-unique values!')
+            # Do Nothing and let the rownames be numbers
+        }
+   } else if("Gene" %in% row_keys) {
+        if (length(lfile[["row_attrs/Gene"]][ ])
+                == length(unique(lfile[["row_attrs/Gene"]][ ]))) {
+            rownames(return_mat) <- lfile[["row_attrs/Gene"]][ ]
+        } else {
+            # Do Nothing and let the rownames be numbers
+        }
+    } else {
+        warning("\"Gene\" and \"Accession\" are both missing!")
+        # Do Nothing and let the rownames be numbers
+    }
     lfile$close_all()
     return(return_mat)
 }
