@@ -188,9 +188,9 @@ _EM_COLUMN_DESCRIPTIONS = {
             '    This can be gotten with str(uuid), if uuid is a\n'
             '    python class uuid.UUID'
         ),
-    'internal':
+    'gillis_lab':
         (
-            '14. Internal\n'
+            '14. Gillis Lab\n'
             '    Whether or not the dataset was scraped from a repository.\n'
             '    False if it is internally generated data.\n'
             '    Must be one of these two values: {\"True\", \"False\"}.'
@@ -210,7 +210,7 @@ _EM_COLUMN_INDEX = {
     'accession'      : 10,
     'date_integrated': 11,
     'uuid'           : 12,
-    'internal'       : 13
+    'gillis_lab'     : 13
 }
 _EM_COLUMN_MANDATORY = {
     'species'        : True,
@@ -226,7 +226,7 @@ _EM_COLUMN_MANDATORY = {
     'accession'      : False,
     'date_integrated': True,
     'uuid'           : True,
-    'internal'       : True
+    'gillis_lab'     : True
 }
 
 _IMU_CELL_COLUMN_DESCRIPTIONS = {
