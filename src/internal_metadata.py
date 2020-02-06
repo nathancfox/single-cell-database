@@ -355,7 +355,7 @@ def get_cell_int_md_univ(uuid, keep_missing = True):
                 else:
                     col_data[key] = lfile[key_path][:]
         column_order = sorted(col_data.columns,
-                            key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
+                              key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])
         col_data = col_data[column_order]
         return(col_data)
 
@@ -462,8 +462,10 @@ def get_cell_int_md_author_annot(uuid):
             key_path = 'cell_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
                 col_data[key] = lfile[key_path][:]
-        col_order = lfile['cell_author_annot'].attrs['column_order'].split('|')
-        col_data = col_data[col_order]
+        column_order = list(lfile['cell_author_annot'].attrs['column_order'].split('|'))
+        if len(column_order) == 1 and column_order[0] == '':
+            column_order = []
+        col_data = col_data[column_order]
         return(col_data)
 
 def get_gene_int_md_author_annot(uuid):
@@ -512,8 +514,10 @@ def get_gene_int_md_author_annot(uuid):
             key_path = 'gene_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
                 row_data[key] = lfile[key_path][:]
-        col_order = lfile['gene_author_annot'].attrs['column_order'].split('|')
-        row_data = row_data[col_order]
+        column_order = list(lfile['gene_author_annot'].attrs['column_order'].split('|'))
+        if len(column_order) == 1 and column_order[0] == '':
+            column_order = []
+        row_data = row_data[column_order]
         return(row_data)
 
 def set_cell_int_md_author_annot(uuid, df):
