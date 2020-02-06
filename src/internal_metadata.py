@@ -384,58 +384,17 @@ def get_gene_int_md_univ(uuid, keep_missing = True):
     """
     with ac__.get_h5_conn(uuid) as lfile:
         row_keys = list(lfile['row_attrs'].keys())
-        skip_col = []
-        if 'Accession' in row_keys:
-            acc = pd.Series(lfile['row_attrs/Accession'])
-            if acc.shape == acc.unique().shape:
-                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
-                skip_col.append('Accession')
-            else:
-                print('WARNING: internal_metadata.get_gene_int_md_univ()')
-                print('  \"Accession\" has non-unique values!')
-                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
-            del acc
-        elif 'Gene' in row_keys:
-            gene = pd.Series(lfile['row_attrs/Gene'])
-            if gene.shape == gene.unique().shape:
-                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
-                skip_col.append('Gene')
-            else:
-                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
-            del gene
-        else:
-            print('WARNING: internal_metadata.get_gene_int_md_univ()')
-            print('  \"Gene\" and \"Accession\" are both missing!')
-            row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
+        row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
         for key in row_keys:
-            if key in skip_col:
-                continue
             key_path = 'row_attrs/' + key
             if len(lfile[key_path].shape) == 1:
-                if (np.array(list(map(str, list(lfile[key_path])))) == '-1').all():
+                if lfile[key_path].attrs['all_missing']:
                     if keep_missing:
                         row_data[key] = lfile[key_path][:]
                 else:
                     row_data[key] = lfile[key_path][:]
-        # Accession and Gene are handled separately because they
-        # aren't handled with the global constants, and so they
-        # can't be sorted by their index.
-        add_acc = False
-        add_gene = False
-        if 'Accession' in list(row_data.columns):
-            add_acc = True
-        if 'Gene' in list(row_data.columns):
-            add_gene = True
-        columns = list(filter(lambda x: x not in ['Accession', 'Gene'],
-                                row_data.columns))
-        column_order = sorted(columns,
-                                key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
-        # Prepended in reverse order to ensure that
-        # Accession will come before Gene
-        if add_gene:
-            column_order = ['Gene'] + column_order
-        if add_acc:
-            column_order = ['Accession'] + column_order
+        column_order = sorted(row_data.columns, # columns,
+                              key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
         row_data = row_data[column_order]
         return(row_data)
 
@@ -489,27 +448,7 @@ def get_gene_int_md_author_annot(uuid):
     """
     with ac__.get_h5_conn(uuid) as lfile:
         row_keys = list(lfile['gene_author_annot'].keys())
-        univ_row_keys = list(lfile['row_attrs'].keys())
-        if 'Accession' in univ_row_keys:
-            acc = pd.Series(lfile['row_attrs/Accession'])
-            if acc.shape == acc.unique().shape:
-                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Accession']))
-            else:
-                print('WARNING: internal_metadata.get_gene_int_md_author_annot()')
-                print('  \"Accession\" has non-unique values!')
-                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
-            del acc
-        elif 'Gene' in univ_row_keys:
-            gene = pd.Series(lfile['row_attrs/Gene'])
-            if gene.shape == gene.unique().shape:
-                row_data = pd.DataFrame(index = np.array(lfile['row_attrs/Gene']))
-            else:
-                row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
-            del gene
-        else:
-            print('WARNING: internal_metadata.get_gene_int_md_author_annot()')
-            print('  \"Gene\" and \"Accession\" are both missing!')
-            row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
+        row_data = pd.DataFrame(index = [i for i in range(lfile['matrix'].shape[0])])
         for key in row_keys:
             key_path = 'gene_author_annot/' + key
             if len(lfile[key_path].shape) == 1:
@@ -594,6 +533,7 @@ def set_cell_int_md_author_annot(uuid, df):
                                                 data = df[col])
                     if hdf5_col not in columns_written.keys():
                         columns_written[hdf5_col] = None
+                dset.attrs['all_missing'] = (df[col].astype(str) == '-1').all()
             except:
                 col_warnings = set() 
                 for col_del in columns_written:
@@ -701,6 +641,7 @@ def set_gene_int_md_author_annot(uuid, df):
                                                 data = df[col])
                     if hdf5_col not in columns_written.keys():
                         columns_written[hdf5_col] = None
+                dset.attrs['all_missing'] = (df[col].astype(str) == '-1').all()
             except:
                 col_warnings = set() 
                 for col_del in columns_written:
@@ -818,6 +759,7 @@ def set_cell_int_md_univ(uuid, df, batch_key):
                         columns_written[col] = None
                 if col == 'batch':
                     dset.attrs['batch_key'] = batch_key
+                dset.attrs['all_missing'] = (df[col].astype(str) == '-1').all()
             except:
                 col_warnings = set() 
                 for col_del in columns_written:
@@ -934,6 +876,7 @@ def set_gene_int_md_univ(uuid, df):
                                                 data = df[col])
                     if col not in columns_written.keys():
                         columns_written[col] = None
+                dset.attrs['all_missing'] = (df[col].astype(str) == '-1').all()
             except:
                 col_warnings = set() 
                 for col_del in columns_written:
@@ -1301,6 +1244,135 @@ def set_gene_aa_col_desc(uuid, column, desc):
             # Write the description
             lfile[f'gene_author_annot/{column}'].attrs['desc'] = desc
             return
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def get_cell_univ_col_all_missing(uuid, column):
+    """Gets the all_missing attribute for a cell universal column.
+
+    For a given column in the internal cell-specific universal
+    metadata, get the "all_missing" attribute.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal cell-specific
+            universal metadata column.
+
+    Returns:
+        The all_missing Boolean.
+
+    Raises:
+        ValueError: If column does not exist.
+        AssertionError: If all_missing attribute does not exist, or
+            is not a Boolean.
+    """
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['col_attrs'].keys():
+            if 'all_missing' in lfile[f'col_attrs/{column}'].attrs.keys():
+                all_missing = lfile[f'col_attrs/{column}'].attrs['all_missing']
+                if type(all_missing) is not np.bool_:
+                    print(f'type  : {type(all_missing)}')
+                    print(f'value : {all_missing}')
+                    raise AssertionError('all_missing is not a boolean!')
+                else:
+                    return(all_missing)
+            else:
+                raise AssertionError('all_missing is not an attribute!')
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def get_cell_aa_col_all_missing(uuid, column):
+    """Gets the all_missing attribute for a cell author_annot column.
+
+    For a given column in the internal cell-specific author-annotated
+    metadata, get the "all_missing" attribute, if available.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal cell-specific
+            author-annotated metadata column.
+
+    Returns:
+        The all_missing Boolean.
+
+    Raises:
+        ValueError: If column does not exist.
+        AssertionError: If all_missing attribute does not exist, or
+            is not a Boolean.
+    """
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['cell_author_annot'].keys():
+            if 'all_missing' in lfile[f'cell_author_annot/{column}'].attrs.keys():
+                all_missing = lfile[f'cell_author_annot/{column}'].attrs['all_missing']
+                if type(all_missing) is not np.bool_:
+                    raise AssertionError('all_missing is not a boolean!')
+                else:
+                    return(all_missing)
+            else:
+                raise AssertionError('all_missing is not an attribute!')
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def get_gene_univ_col_all_missing(uuid, column):
+    """Gets the all_missing attribute for a gene universal column.
+
+    For a given column in the internal gene-specific universal
+    metadata, get the "all_missing" attribute.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal gene-specific
+            universal metadata column.
+
+    Returns:
+        The all_missing if available.
+
+    Raises:
+        ValueError: If column does not exist.
+        AssertionError: If all_missing attribute does not exist, or
+            is not a Boolean.
+    """
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['row_attrs'].keys():
+            if 'all_missing' in lfile[f'row_attrs/{column}'].attrs.keys():
+                all_missing = lfile[f'row_attrs/{column}'].attrs['all_missing']
+                if type(all_missing) is not np.bool_:
+                    raise AssertionError('all_missing is not a boolean!')
+                else:
+                    return(all_missing)
+            else:
+                raise AssertionError('all_missing is not an attribute!')
+        else:
+            raise ValueError(f'\"{column}\" is not a valid column!')
+
+def get_gene_aa_col_all_missing(uuid, column):
+    """Gets the all_missing attribute for a gene author-annotated column.
+
+    For a given column in the internal gene-specific author-annotated
+    metadata, get the "all_missing" attribute.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired internal gene-specific
+            author-annotated metadata column.
+
+    Returns:
+        The all_missing if available. Otherwise a warning is printed
+        and None is returned.
+
+    Raises:
+        ValueError: If column does not exist.
+    """
+    with ac__.get_h5_conn(uuid) as lfile:
+        if column in lfile['gene_author_annot'].keys():
+            if 'all_missing' in lfile[f'gene_author_annot/{column}'].attrs.keys():
+                all_missing = lfile[f'gene_author_annot/{column}'].attrs['all_missing']
+                if type(all_missing) is not np.bool_:
+                    raise AssertionError('all_missing is not a boolean!')
+                else:
+                    return(all_missing)
+            else:
+                raise AssertionError('all_missing is not an attribute!')
         else:
             raise ValueError(f'\"{column}\" is not a valid column!')
 

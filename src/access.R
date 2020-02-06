@@ -271,10 +271,25 @@ get_sce <- function(uuid,
         colData = col_data,
         metadata = metadata
     )
-    # Use this because it handles choosing between Accession and Gene
-    rownames(sce) <- rownames(row_data)
-    # Removed because the get_gene_author_annot() function leaves it closed
-    # lfile$close_all()
+    if (!hdf5r::h5attr(lfile[["row_attrs/Accession"]], "all_missing")) {
+        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+    } else if (!hdf5r::h5attr(lfile[["row_attrs/Gene"]], "all_missing")) {
+        genes <- lfile[["row_attrs/Gene"]][ ]
+        if (length(genes) == length(unique(genes))) {
+            rownames(row_data) <- genes
+        } else {
+            # Do nothing and let the rownames be integers
+        }
+    } else {
+        # Do nothing and let the rownames be integers
+    }
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(sce)
 }
 
@@ -322,20 +337,30 @@ get_cell_univ <- function(uuid, keep_missing = TRUE) {
         }
     }
     # HARDCODED CONSTANT FLAG
-    column_order <- c('cluster',
-                      'species',
-                      'tissue',
-                      'source_organism',
-                      'sex',
-                      'condition',
-                      'batch',
-                      'uuid')
+    column_order <- c("cluster",
+                      "species",
+                      "tissue",
+                      "source_organism",
+                      "sex",
+                      "condition",
+                      "batch",
+                      "uuid")
     column_order <- column_order[column_order %in% colnames(col_data)]
+    # If a dataframe is column_reordered this way with a single
+    # column, it returns a vector instead of a single column
+    # dataframe. Conveniently, if a dataframe only has a single
+    # column, the columns are already sorted.
     if (length(column_order) > 1) {
         col_data <- col_data[, column_order]
     }
     rownames(col_data) <- lfile[["col_attrs/CellID"]][ ]
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(col_data)
 }
 
@@ -369,35 +394,10 @@ get_gene_univ <- function(uuid, keep_missing = TRUE) {
     # operation just to get a dimension more readably.
     row_data <- data.frame(matrix(nrow = lfile[["matrix"]]$dims[2],
                                   ncol = 0))
-    skip_col <- c()
-    if ("Accession" %in% row_keys) {
-        if (length(lfile[["row_attrs/Accession"]][ ])
-                == length(unique(lfile[["row_attrs/Accession"]][ ]))) {
-            index <- "Accession"
-            skip_col <- c("Accession", skip_col)
-        } else {
-            warning('\"Accession\" has non-unique values!')
-            index <- ""
-        }
-   } else if("Gene" %in% row_keys) {
-        if (length(lfile[["row_attrs/Gene"]][ ])
-                == length(unique(lfile[["row_attrs/Gene"]][ ]))) {
-            index <- "Gene"
-            skip_col <- c("Gene", skip_col)
-        } else {
-            index <- ""
-        }
-    } else {
-        warning("\"Gene\" and \"Accession\" are both missing!")
-        index <- ""
-    }
     for (i in seq_along(row_keys)) {
-        if (row_keys[i] %in% skip_col) {
-            next
-        }
         k <- paste("row_attrs/", row_keys[i], sep = "")
         if (length(lfile[[k]]$dims) == 1) {
-            if (all(as.character(lfile[[k]][ ]) == "-1")) {
+            if (hdf5r::h5attr(lfile[[k]], "all_missing")) {
                 if (keep_missing) {
                     row_data[row_keys[i]] <- lfile[[k]][ ]
                 }
@@ -406,36 +406,24 @@ get_gene_univ <- function(uuid, keep_missing = TRUE) {
             }
         }
     }
-    add_acc <- FALSE
-    add_gene <- FALSE
-    if ("Accession" %in% colnames(row_data)) {
-        add_acc <- TRUE
-    }
-    if ("Gene" %in% colnames(row_data)) {
-        add_gene <- TRUE
-    }
-    columns <- colnames(row_data)
-    columns <- columns[!(columns %in% c("Accession", "Gene"))]
     # HARDCODED CONSTANT FLAG
-    column_order <- c()
+    column_order <- c("Accession",
+                      "Gene")
     column_order <- column_order[column_order %in% colnames(row_data)]
-    if (add_gene) {
-        column_order <- c("Gene", column_order)
-    }
-    if (add_acc) {
-        column_order <- c("Accession", column_order)
-    }
+    # If a dataframe is column_reordered this way with a single
+    # column, it returns a vector instead of a single column
+    # dataframe. Conveniently, if a dataframe only has a single
+    # column, the columns are already sorted.
     if (length(column_order) > 1) {
         row_data <- row_data[, column_order]
     }
-    if (index == "Gene") {
-        rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
-    } else if (index == "Accession") {
-        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
-    } else {
-        # Do Nothing and let the rownames be numbers
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
     }
-    lfile$close_all()
     return(row_data)
 }
 
@@ -473,10 +461,20 @@ get_cell_author_annot <- function(uuid) {
     column_order <- hdf5r::h5attr(lfile[["cell_author_annot"]],
                                   "column_order")
     column_order <- strsplit(column_order, "|", fixed = TRUE)[[1]]
+    # If a dataframe is column_reordered this way with a single
+    # column, it returns a vector instead of a single column
+    # dataframe. Conveniently, if a dataframe only has a single
+    # column, the columns are already sorted.
     if (length(column_order) > 1) {
         col_data <- col_data[, column_order]
     }
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(col_data)
 }
 
@@ -493,7 +491,6 @@ get_cell_author_annot <- function(uuid) {
 get_gene_author_annot <- function(uuid) {
     lfile <- get_h5_conn(uuid, warning = FALSE)
     row_keys <- names(lfile[["gene_author_annot"]])
-    univ_row_keys <- names(lfile[["row_attrs"]])
     # Initializes with the number of columns in the matrix,
     # even though the loom file stores the expression matrix
     # as genes x cells, and the SingleCellExperiment stores
@@ -513,32 +510,35 @@ get_gene_author_annot <- function(uuid) {
             row_data[row_keys[i]] <- lfile[[k]][ ]
         }
     }
-    if ("Accession" %in% univ_row_keys) {
-        if (length(lfile[["row_attrs/Accession"]][ ])
-                == length(unique(lfile[["row_attrs/Accession"]][ ]))) {
-            rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+    if (!hdf5r::h5attr(lfile[["row_attrs/Accession"]], "all_missing")) {
+        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+    } else if (!hdf5r::h5attr(lfile[["row_attrs/Gene"]], "all_missing")) {
+        genes <- lfile[["row_attrs/Gene"]][ ]
+        if (length(genes) == length(unique(genes))) {
+            rownames(row_data) <- genes
         } else {
-            warning('\"Accession\" has non-unique values!')
-            # Do Nothing and let the rownames be numbers
-        }
-   } else if("Gene" %in% univ_row_keys) {
-        if (length(lfile[["row_attrs/Gene"]][ ])
-                == length(unique(lfile[["row_attrs/Gene"]][ ]))) {
-            rownames(row_data) <- lfile[["row_attrs/Gene"]][ ]
-        } else {
-            # Do Nothing and let the rownames be numbers
+            # Do nothing and let the rownames be integers
         }
     } else {
-        warning("\"Gene\" and \"Accession\" are both missing!")
-        # Do Nothing and let the rownames be numbers
+        # Do nothing and let the rownames be integers
     }
     column_order <- hdf5r::h5attr(lfile[["gene_author_annot"]],
                                   "column_order")
     column_order <- strsplit(column_order, "|", fixed = TRUE)[[1]]
+    # If a dataframe is column_reordered this way with a single
+    # column, it returns a vector instead of a single column
+    # dataframe. Conveniently, if a dataframe only has a single
+    # column, the columns are already sorted.
     if (length(column_order) > 1) {
         row_data <- row_data[, column_order]
     }
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(row_data)
 }
 
@@ -553,18 +553,11 @@ get_extern_md <- function() {
                      sep = "\t",
                      quote = "",
                      stringsAsFactors = TRUE)
-    # Removed to prevent NA creation with "-1"
-    # df$condition <- as.logical(df$condition)
     df$date_generated <- as.Date(df$date_generated)
-    # Removed to prevent NA creation with "OTHER"
-    # df$umis <- as.logical(df$umis)
-    # df$spikeins <- as.logical(df$spikeins)
     df$doi <- as.character(df$doi)
     df$accession <- as.character(df$accession)
     df$date_integrated <- as.Date(df$date_integrated)
     df$uuid <- as.character(df$uuid)
-    # Removed to prevent NA creation with "-1"
-    # df$internal <- as.logical(df$internal)
     return(df)
 }
 
@@ -618,7 +611,13 @@ uuid_to_row <- function(uuid, columns = NULL) {
 get_cell_ids <- function(uuid) {
     lfile <- get_h5_conn(uuid, warning = FALSE)
     cell_ids <- lfile[["col_attrs/CellID"]][ ]
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(cell_ids)
 }
 
@@ -632,12 +631,12 @@ get_cell_ids <- function(uuid) {
 #'   returned. If the requested variable is not available, but the other
 #'   is, the other will be returned with a warning.
 #' @return A character vector containing the gene IDs.
-get_gene_ids <- function(uuid, accession = FALSE) {
+get_gene_ids <- function(uuid, accession = TRUE) {
     lfile <- get_h5_conn(uuid, warning = FALSE)
     if (accession) {
-        if ("Accession" %in% names(lfile[["row_attrs"]])) {
+        if (!hdf5r::h5attr(lfile[["row_attrs/Accession"]], "all_missing")) {
             gene_ids <- lfile[["row_attrs/Accession"]][ ]
-        } else if ("Gene" %in% names(lfile[["row_attrs"]])) {
+        } else if (!hdf5r::h5attr(lfile[["row_attrs/Gene"]], "all_missing")) {
             warning("\"Accession\" not available. Returning \"Gene\" instead.")
             gene_ids <- lfile[["row_attrs/Gene"]][ ]
         } else {
@@ -645,9 +644,9 @@ get_gene_ids <- function(uuid, accession = FALSE) {
                        " or an \"Accession\" row attribute!", sep = ""))
         }
     } else {
-        if ("Gene" %in% names(lfile[["row_attrs"]])) {
+        if (!hdf5r::h5attr(lfile[["row_attrs/Gene"]], "all_missing")) {
             gene_ids <- lfile[["row_attrs/Gene"]][ ]
-        } else if ("Accession" %in% names(lfile[["row_attrs"]])) {
+        } else if (!hdf5r::h5attr(lfile[["row_attrs/Accession"]], "all_missing")) {
             warning("\"Gene\" not available. Returning \"Accession\" instead.")
             gene_ids <- lfile[["row_attrs/Accession"]][ ]
         } else {
@@ -655,7 +654,13 @@ get_gene_ids <- function(uuid, accession = FALSE) {
                        " or an \"Accession\" row attribute!", sep = ""))
         }
     }
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(gene_ids)
 }
 
@@ -686,19 +691,43 @@ get_column_description <- function(uuid, column,
                     desc <- hdf5r::h5attr(lfile[[key]], "description")
                     if (is.null(desc) || desc == "") {
                         cat("No description available!\n")
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return()
                     } else {
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return(desc)
                     }
                 } else {
                     cat("No description available!\n")
-                    lfile$close_all()
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
                     return()
                 }
             } else {
-                lfile$close_all()
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
                 stop(paste(column, " is not a valid column!", sep = ""))
             }
         } else if ( var == "gene") {
@@ -709,19 +738,43 @@ get_column_description <- function(uuid, column,
                     desc <- hdf5r::h5attr(lfile[[key]], "description")
                     if (is.null(desc) || desc == "") {
                         cat("No description available!\n")
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return()
                     } else {
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return(desc)
                     }
                 } else {
                     cat("No description available!\n")
-                    lfile$close_all()
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
                     return()
                 }
             } else {
-                lfile$close_all()
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
                 stop(paste(column, " is not a valid column!", sep = ""))
             }
         } else {
@@ -736,19 +789,43 @@ get_column_description <- function(uuid, column,
                     desc <- hdf5r::h5attr(lfile[[key]], "description")
                     if (is.null(desc) || desc == "") {
                         cat("No description available!\n")
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return()
                     } else {
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return(desc)
                     }
                 } else {
                     cat("No description available!\n")
-                    lfile$close_all()
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
                     return()
                 }
             } else {
-                lfile$close_all()
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
                 stop(paste(column, " is not a valid column!", sep = ""))
             }
         } else if ( var == "gene") {
@@ -759,19 +836,43 @@ get_column_description <- function(uuid, column,
                     desc <- hdf5r::h5attr(lfile[[key]], "description")
                     if (is.null(desc) || desc == "") {
                         cat("No description available!\n")
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return()
                     } else {
-                        lfile$close_all()
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
                         return(desc)
                     }
                 } else {
                     cat("No description available!\n")
-                    lfile$close_all()
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
                     return()
                 }
             } else {
-                lfile$close_all()
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
                 stop(paste(column, " is not a valid column!", sep = ""))
             }
         } else {
@@ -827,7 +928,13 @@ get_expr_mat <- function(uuid, matrix = "matrix") {
         warning("\"Gene\" and \"Accession\" are both missing!")
         # Do Nothing and let the rownames be numbers
     }
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(return_mat)
 }
 
@@ -850,7 +957,13 @@ get_batch_key <- function(uuid) {
                    sep = ""))
     }
     batch_key <- hdf5r::h5attr(lfile[["col_attrs/batch"]], "batch_key")
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(batch_key)
 }
 
@@ -866,6 +979,223 @@ get_batch_key <- function(uuid) {
 get_expr_mat_names <- function(uuid) {
     lfile <- get_h5_conn(uuid, warning = FALSE)
     mat_names <- c("matrix", names(lfile[["layers"]]))
-    lfile$close_all()
+    # In hdf5r, closing a file closes all other file connection
+    # objects for that file, regardless of scope. This ensures
+    # that it's not left hanging, but allows for the possibility
+    # that it was closed elsewhere.
+    if (lfile$is_valid) {
+        lfile$close_all()
+    }
     return(mat_names)
+}
+
+#' Get the all_missing attribute for a given column.
+#' 
+#' For a given internal metadata column, retrieve the HDF5
+#' "all_missing" attribute, if available, from the requested
+#' dataset.
+#' 
+#' @param uuid Character vector of length 1. UUID of the desired dataset.
+#' @param column Character vector of length 1. The name of the column, for
+#'   which the "all_missing" attribute should be retrieved.
+#' @param var Character vector of length 1. Must be "cell" or "gene".
+#'   Indicates which variable's metadata the column is in. 
+#' @param metadata Character vector of length 1. Must be "universal" or
+#'   "author_annot". Indicates which metadata the column is in.
+#' @return A character vector of length 1, holding the HDF5 "all_missing"
+#'   attribute of the indicated column. If there is no all_missing
+#'   attribute available, a message is printed, and the function returns NULL.
+get_column_allmissing <- function(uuid, column,
+                                  var = "cell", metadata = "universal") {
+    if (metadata == "universal") {
+        if (var == "cell") {
+            lfile <- get_h5_conn(uuid, warning = FALSE)
+            if (column %in% names(lfile[["col_attrs"]])) {
+                key <- paste("col_attrs/", column, sep = "")
+                if ("all_missing" %in% hdf5r::h5attr_names(lfile[[key]])) {
+                    all_missing <- hdf5r::h5attr(lfile[[key]], "all_missing")
+                    if (!is.logical(all_missing)) {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        stop("all_missing is not a boolean!")
+                    } else {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        return(all_missing)
+                    }
+                } else {
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
+                    stop("all_missing attribute does not exist!")
+                }
+            } else {
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
+                stop(paste(column, " is not a valid column!", sep = ""))
+            }
+        } else if ( var == "gene") {
+            lfile <- get_h5_conn(uuid, warning = FALSE)
+            if (column %in% names(lfile[["row_attrs"]])) {
+                key <- paste("row_attrs/", column, sep = "")
+                if ("all_missing" %in% hdf5r::h5attr_names(lfile[[key]])) {
+                    all_missing <- hdf5r::h5attr(lfile[[key]], "all_missing")
+                    if (!is.logical(all_missing)) {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        stop("all_missing is not a boolean!")
+                    } else {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        return(all_missing)
+                    }
+                } else {
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
+                    stop("all_missing attribute does not exist!")
+                }
+            } else {
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
+                stop(paste(column, " is not a valid column!", sep = ""))
+            }
+        } else {
+            stop("ERROR: var must be \"cell\" or \"gene\"!")
+        }
+    } else if(metadata == "author_annot") {
+        if (var == "cell") {
+            lfile <- get_h5_conn(uuid, warning = FALSE)
+            if (column %in% names(lfile[["cell_author_annot"]])) {
+                key <- paste("cell_author_annot/", column, sep = "")
+                if ("all_missing" %in% hdf5r::h5attr_names(lfile[[key]])) {
+                    all_missing <- hdf5r::h5attr(lfile[[key]], "all_missing")
+                    if (!is.logical(all_missing)) {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        stop("all_missing is not a boolean!")
+                    } else {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        return(all_missing)
+                    }
+                } else {
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
+                    stop("all_missing attribute does not exist!")
+                }
+            } else {
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
+                stop(paste(column, " is not a valid column!", sep = ""))
+            }
+        } else if ( var == "gene") {
+            lfile <- get_h5_conn(uuid, warning = FALSE)
+            if (column %in% names(lfile[["gene_author_annot"]])) {
+                key <- paste("gene_author_annot/", column, sep = "")
+                if ("all_missing" %in% hdf5r::h5attr_names(lfile[[key]])) {
+                    all_missing <- hdf5r::h5attr(lfile[[key]], "all_missing")
+                    if (!is.logical(all_missing)) {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        stop("all_missing is not a boolean!")
+                    } else {
+                        # In hdf5r, closing a file closes all other file connection
+                        # objects for that file, regardless of scope. This ensures
+                        # that it's not left hanging, but allows for the possibility
+                        # that it was closed elsewhere.
+                        if (lfile$is_valid) {
+                            lfile$close_all()
+                        }
+                        return(all_missing)
+                    }
+                } else {
+                    # In hdf5r, closing a file closes all other file connection
+                    # objects for that file, regardless of scope. This ensures
+                    # that it's not left hanging, but allows for the possibility
+                    # that it was closed elsewhere.
+                    if (lfile$is_valid) {
+                        lfile$close_all()
+                    }
+                    stop("all_missing attribute does not exist!")
+                }
+            } else {
+                # In hdf5r, closing a file closes all other file connection
+                # objects for that file, regardless of scope. This ensures
+                # that it's not left hanging, but allows for the possibility
+                # that it was closed elsewhere.
+                if (lfile$is_valid) {
+                    lfile$close_all()
+                }
+                stop(paste(column, " is not a valid column!", sep = ""))
+            }
+        } else {
+            stop("ERROR: var must be \"cell\" or \"gene\"!")
+        }
+    } else {
+        stop("ERROR: metadata must be \"universal\" or \"author_annot\"!")
+    }
 }

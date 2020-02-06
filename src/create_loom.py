@@ -71,14 +71,20 @@ def create_loom_file(folder_path, expr_matrix, barcodes,
         raise FileExistsError(f'{file_path} already exists!')
     if acc is None and genes is None:
         raise ValueError('acc and genes cannot both be None!')
-    col_attrs = {'CellID': barcodes}
+    if barcodes.shape != np.unique(barcodes).shape:
+        raise ValueError('barcodes cannot have non-unique values!')
+    col_attrs = {'CellID': np.array(barcodes)}
     row_attrs = {}
     if acc is not None:
         if acc.shape != np.unique(acc).shape:
             raise ValueError('acc cannot have non-unique values!')
-        row_attrs['Accession'] = acc
+        row_attrs['Accession'] = np.array(acc)
+    else:
+        row_attrs['Accession'] = np.repeat('-1', expr_matrix.shape[0])
     if genes is not None:
-        row_attrs['Gene'] = genes
+        row_attrs['Gene'] = np.array(genes)
+    else:
+        row_attrs['Gene'] = np.repeat('-1', expr_matrix.shape[0])
     try:
         lp.create(file_path, expr_matrix, row_attrs, col_attrs)
     except MemoryError as e:
@@ -89,18 +95,28 @@ def create_loom_file(folder_path, expr_matrix, barcodes,
         lfile.create_group('gene_author_annot')
         lfile['cell_author_annot'].attrs['column_order'] = ''
         lfile['gene_author_annot'].attrs['column_order'] = ''
+        cellid_all_missing = (lfile['col_attrs/CellID'][:] == '-1').all()
+        lfile['col_attrs/CellID'].attrs['all_missing'] = cellid_all_missing
+        if 'Accession' in row_attrs.keys():
+            acc_all_missing = (lfile['row_attrs/Accession'][:] == '-1').all()
+            lfile['row_attrs/Accession'].attrs['all_missing'] = acc_all_missing
+        if 'Gene' in row_attrs.keys():
+            gene_all_missing = (lfile['row_attrs/Gene'][:] == '-1').all()
+            lfile['row_attrs/Gene'].attrs['all_missing'] = gene_all_missing
 
-def get_expr_matrix_from_cellranger(path, prefix):
-    """Gets expression matrix, barcodes, features from Cell Ranger.
+def get_expr_matrix_from_cr_triplet(path, prefix, sparse=True):
+    """Gets mat, bar, feat from Cell Ranger triplet files.
 
-    Converts the matrices outputted by Cell Ranger into:
-        1. A scipy sparse COO matrix holding the expression
+    Converts the barcodes.tsv, genes/features.tsv, and
+    matrix.mtx files outputted by Cell Ranger into:
+        1. A scipy sparse CSC matrix holding the expression
            matrix.
         2. A numpy ndarray holding the barcodes
         3. A numpy ndarray holding the features
     However, if there is additional information in the
-    barcodes and features files, a pandas dataframe is returned
-    instead of a numpy ndarray.
+    barcodes and features files, a pandas dataframe is
+    returned instead of a numpy ndarray.
+
     Expects to receive the path to the folder holding the
     actual barcodes.tsv, features.tsv, matrix.mtx files.
     Can handle gzipped versions (e.g. barcodes.tsv.gz) and
@@ -110,11 +126,17 @@ def get_expr_matrix_from_cellranger(path, prefix):
         path: String to the folder holding the files
         prefix: String. Prefix appended to the beginning of the
             expected filenames. e.g. Sample1_barcodes.tsv
+        sparse: Boolean. If True, a scipy sparse CSC matrix
+            will be returned. If False, a numpy ndarray
+            will be returned.
 
     Returns:
         A tuple with 3 members:
-            1. A scipy sparse COO matrix holding the expression
-               matrix. Barcodes = Rows; Features = Columns
+            1. A matrix holding the expression
+               matrix. Barcodes = Columns; Features = Rows.
+               If sparse=True, this will be a scipy CSC
+               sparse matrix. Otherwise, will be a numpy
+               ndarray.
             2. If the barcodes.tsv file only held the barcodes,
                a numpy ndarray holding the barcodes is returned.
                If there was any additional information, a pandas
@@ -168,6 +190,10 @@ def get_expr_matrix_from_cellranger(path, prefix):
                                 '*matrix.mtx or *matrix.mtx.gz')
 
     mat = scipy.io.mmread(matrix_file)
+    if not sparse:
+        mat = mat.toarray()
+    else:
+        mat = mat.tocsc()
     features_df = pd.read_csv(feature_file, sep = '\t', header = None)
     if len(features_df.columns) > 1:
         print('ALERT: features has extra columns')
@@ -181,6 +207,124 @@ def get_expr_matrix_from_cellranger(path, prefix):
     else:
         barcodes = np.array(barcodes_df.iloc[:, 0])
     return(mat, barcodes, features)
+
+def get_expr_matrix_from_cr_filt_h5(path, sparse=True):
+    """Gets mat, bar, feat from Cell Ranger filtered_feature_bc_matrix.
+
+    Converts the filtered_feature_bc_matrix.h5 file outputted
+    by Cell Ranger into:
+        1. A scipy sparse CSC matrix holding the expression
+           matrix.
+        2. A numpy ndarray holding the barcodes
+        3. A numpy ndarray holding the features
+    However, if there is additional information on the
+    barcodes and features, a pandas dataframe is
+    returned instead of a numpy ndarray.
+
+    Expects to receive the path to the file originally
+    named filtered_feature_bc_matrix.h5.
+
+    Args:
+        path: String to the file
+        sparse: Boolean. If True, a sparse scipy CSC matrix
+            will be returned. If False, a numpy ndarray
+            will be returned
+
+    Returns:
+        A tuple with 3 members:
+            1. A matrix holding the expression
+               matrix. Barcodes = Columns; Features = Rows.
+               If sparse=True, this will be a scipy CSC
+               sparse matrix. Otherwise, will be a numpy
+               ndarray.
+            2. If the barcodes information only held the barcodes,
+               a numpy ndarray holding the barcodes is returned.
+               If there was any additional information, a pandas
+               dataframe is returned instead and an alert
+               is printed.
+            3. If the features information only held the features,
+               a numpy ndarray holding the features is returned.
+               If there was any additional information, a pandas
+               dataframe is returned instead and an alert
+               is printed.
+    
+    Raises:
+        AssertionError: If anything about the HDF5 file structure
+            is unexpected.
+    """
+    with h5.File(path, 'r') as hfile:
+        if len(hfile.keys()) != 1:
+            raise AssertionError('HDF5 file structure is unusual! '
+                                 'You should parse manually.')
+        top_group = list(hfile.keys())[0]
+        valid_keys = ('barcodes',
+                      'data',
+                      'indices',
+                      'indptr',
+                      'shape',
+                      'genes',
+                      'gene_names',
+                      'features',
+                      'feature_names')
+        for k in hfile[f'{top_group}'].keys():
+            if k not in valid_keys:
+                raise AssertionError('HDF5 file structure is unusual! '
+                                    'You should parse manually.')
+        keys = hfile[f'{top_group}'].keys()
+        if (('genes' in keys or 'gene_names' in keys)
+                and ('features' in keys or 'feature_names' in keys)):
+            raise AssertionError('HDF5 file structure is unusual! '
+                                 'You should parse manually.')
+        elif ('genes' in keys or 'gene_names' in keys):
+            feat_name = 'gene'
+        elif ('features' in keys or 'feature_names' in keys):
+            feat_name = 'feature'
+        else:
+            print('WARNING: No feature information available!')
+            feat_name = None
+        mandatory_keys = ('barcodes',
+                          'data',
+                          'indices',
+                          'indptr',
+                          'shape')
+        for mk in mandatory_keys:
+            if mk not in keys:
+                raise AssertionError('HDF5 file structure is unusual! '
+                                    'You should parse manually.')
+        if hfile[f'{top_group}/shape'][1] != hfile[f'{top_group}/barcodes'].shape[0]:
+            raise AssertionError('barcodes and shape do not match! '
+                                 'You should parse manually.')
+        mat = scipy.sparse.csc_matrix((hfile[f'{top_group}/data'][:],
+                                       hfile[f'{top_group}/indices'][:],
+                                       hfile[f'{top_group}/indptr'][:]),
+                                      shape=hfile[f'{top_group}/shape'][:])
+        if not sparse:
+            mat = mat.toarray()
+        bar = hfile[f'{top_group}/barcodes'][:]
+        if type(bar[0]) is np.bytes_:
+            bar = np.array(list(map(lambda x: x.decode('utf-8'), bar)))
+        if feat_name is not None:
+            if f'{feat_name}s' in keys and f'{feat_name}_names' in keys:
+                col1 = hfile[f'{top_group}/{feat_name}s'][:]
+                col2 = hfile[f'{top_group}/{feat_name}_names'][:]
+                if col1.shape[0] != col2.shape[0]:
+                    raise AssertionError(f'{feat_name}s and {feat_name}_names '
+                                          'have different shapes!')
+                if type(col1[0]) is np.bytes_:
+                    col1 = map(lambda x: x.decode('utf-8'), col1)
+                if type(col2[0]) is np.bytes_:
+                    col2 = map(lambda x: x.decode('utf-8'), col2)
+                # You can pass iterators to pd.DataFrame,
+                # so you don't have to convert to an iterable
+                feat = pd.DataFrame([col1, col2]).transpose()
+            elif f'{feat_name}s' in keys:
+                feat = hfile[f'{top_group}/{feat_name}s'][:]
+            else:
+                feat = hfile[f'{top_group}/{feat_name}_names'][:]
+        if feat.shape[0] != hfile[f'{top_group}/shape'][0]:
+            raise AssertionError('feature info and shape do not match '
+                                 'dimensions! You should parse manually.')
+        return(mat, bar, feat)        
 
 def get_expr_matrix_from_csv(path, rows = 'genes', **kwargs):
     """Gets expression matrix, barcodes, features from a csv-like file.
@@ -220,9 +364,6 @@ def set_layer(new_mat, name, uuid = None):
     """Sets an expression matrix.
 
     Sets an expression matrix in the given dataset.
-    Can be accessed via a UUID lookup from the external
-    metadata, or by a direct filepath. Cannot pass
-    both uuid and filepath.
 
     Args:
         new_mat: numpy 2-D array of ints or floats. The

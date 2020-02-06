@@ -105,7 +105,7 @@ def get_loom_conn(uuid):
     lfile = lp.connect(get_loom_filename(uuid), 'r')
     return(lfile)
 
-def get_anndata(uuid, **kwargs):
+def get_anndata(uuid, keep_missing='both', **kwargs):
     """Get an AnnData object from a dataset.
 
     Given a UUID, loads the associated loom file
@@ -113,6 +113,16 @@ def get_anndata(uuid, **kwargs):
 
     Args:
         uuid: String. UUID of the desired dataset
+        keep_missing: String. Must be 'cells', 'genes', 'both',
+            or 'none'. Indicates which internal universal metadata
+            columns to keep. If 'cells, then cell-specific internal
+            universal metadata columns that are all_missing will
+            still be kept, but gene-specific missing columns will
+            be dropped. Vice versa for 'genes'. If 'both', then
+            all columns will be kept. If 'none', then missing columns
+            will be dropped from both cell-specific and gene-specific
+            internal universal metadata. Does not apply to
+            author-annotated metadata.
         **kwargs: Keyword arguments passed to
             scanpy.read_loom()
     
@@ -122,40 +132,58 @@ def get_anndata(uuid, **kwargs):
     
     Raises: None
     """
+    if keep_missing not in ('cells', 'genes', 'both', 'none'):
+        raise ValueError('keep_missing must be \"cells\", \"genes\", '
+                            '\"both\", or \"none\"!')
     # Handles the loom convention that genes may be named
     # in the 'Gene' or 'Accession' row attribute.
     if 'var_names' not in kwargs.keys():
         with get_h5_conn(uuid) as lfile:
-            if 'Accession' in lfile['row_attrs'].keys():
+            add_back = None
+            if not lfile['row_attrs/Accession'].attrs['all_missing']:
                 kwargs['var_names'] = 'Accession'
-            elif 'Gene' in lfile['row_attrs'].keys():
-                kwargs['var_names'] = 'Gene'
+                add_back = 'Accession'
+            elif not lfile['row_attrs/Gene'].attrs['all_missing']:
+                if np.unique(lfile['row_attrs/Gene'][:]).shape == lfile['row_attrs/Gene'].shape:
+                    kwargs['var_names'] = 'Gene'
+                    add_back = 'Gene'
+                else:
+                    # By passing a column that doesn't exist, the constructor
+                    # silently creates a numbered index
+                    kwargs['var_names'] = 'PLACEHOLDER_FOR_NUMBERED_INDEX'
             else:
                 # By passing a column that doesn't exist, the constructor
                 # silently creates a numbered index
                 kwargs['var_names'] = 'PLACEHOLDER_FOR_NUMBERED_INDEX'
     adata = sc.read_loom(get_loom_filename(uuid), **kwargs)
-    # Accession and Gene are handled separately because they
-    # aren't handled with the global constants, and so they
-    # can't be sorted by their index.
-    add_acc = False
-    add_gene = False
-    if 'Accession' in list(adata.var.columns):
-        add_acc = True
-    if 'Gene' in list(adata.var.columns):
-        add_gene = True
-    var_columns = list(filter(lambda x: x not in ['Accession', 'Gene'],
-                              adata.var.columns))
-    var_column_order = sorted(var_columns,
-                              key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])
-    # Prepended in reverse order to ensure that
-    # Accession will come before Gene
-    if add_gene:
-        var_column_order = ['Gene'] + var_column_order
-    if add_acc:
-        var_column_order = ['Accession'] + var_column_order
-    adata.var = adata.var[var_column_order]
-    adata.obs = adata.obs[sorted(adata.obs.columns,
+    if add_back is not None:
+        with get_h5_conn(uuid) as lfile:
+            adata.var[f'{add_back}'] = lfile[f'row_attrs/{add_back}'][:]
+    if keep_missing == 'both':
+        cell_columns_to_keep = adata.obs.columns
+        gene_columns_to_keep = adata.var.columns
+    else:
+        cell_columns_to_keep = []
+        gene_columns_to_keep = []
+        if keep_missing == 'genes' or keep_missing == 'none':
+            cell_columns_to_keep = []
+            with get_h5_conn(uuid) as lfile:
+                for col in adata.obs.columns:
+                    if not lfile[f'col_attrs/{col}'].attrs['all_missing']:
+                        cell_columns_to_keep.append(col)
+        if keep_missing == 'cells' or keep_missing == 'none':
+            gene_columns_to_keep = []
+            with get_h5_conn(uuid) as lfile:
+                for col in adata.var.columns:
+                    if not lfile[f'row_attrs/{col}'].attrs['all_missing']:
+                        gene_columns_to_keep.append(col)
+    if len(cell_columns_to_keep) == 0:
+        cell_columns_to_keep = adata.obs.columns
+    if len(gene_columns_to_keep) == 0:
+        gene_columns_to_keep = adata.var.columns
+    adata.var = adata.var[sorted(gene_columns_to_keep,
+                                 key = lambda x: GC._IMU_GENE_COLUMN_INDEX[x])]
+    adata.obs = adata.obs[sorted(cell_columns_to_keep,
                                  key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])]
     adata.uns['batch_key'] = get_batch_key(uuid)
     adata.uns['cell_author_annot'] = get_cell_author_annot(uuid)
@@ -306,7 +334,7 @@ def get_cell_ids(uuid):
         cell_ids = np.array(lfile['col_attrs/CellID'])
         return(cell_ids)
 
-def get_gene_ids(uuid, accession = False):
+def get_gene_ids(uuid, accession = True):
     """Get gene IDs from a dataset.
 
     Args:
@@ -326,9 +354,9 @@ def get_gene_ids(uuid, accession = False):
     """
     with get_h5_conn(uuid) as lfile:
         if accession:
-            if 'Accession' in lfile['row_attrs'].keys():
+            if not lfile['row_attrs/Accession'].attrs['all_missing']:
                 gene_ids = np.array(lfile['row_attrs/Accession']) 
-            elif 'Gene' in lfile['row_attrs'].keys():
+            elif not lfile['row_attrs/Gene'].attrs['all_missing']:
                 print('Warning! "Accession" not available. Returning \"Gene\" '
                     'instead.')
                 gene_ids = np.array(lfile['row_attrs/Gene']) 
@@ -336,9 +364,9 @@ def get_gene_ids(uuid, accession = False):
                 raise AssertionError(f'Dataset {uuid} does not have a \"Gene\" or '
                                     f'an \"Accession\" row attribute!')
         else:
-            if 'Gene' in lfile['row_attrs'].keys():
+            if not lfile['row_attrs/Gene'].attrs['all_missing']:
                 gene_ids = np.array(lfile['row_attrs/Gene']) 
-            elif 'Accession' in lfile['row_attrs'].keys():
+            elif not lfile['row_attrs/Accession'].attrs['all_missing']:
                 print('Warning! "Gene" not available. Returning \"Accession\" '
                     'instead.')
                 gene_ids = np.array(lfile['row_attrs/Accession']) 
@@ -468,6 +496,46 @@ def get_expr_mat_names(uuid):
             names.append(k)
         names = np.array(names)
         return(names)
+
+def get_column_allmissing(uuid, column, var = 'cell', metadata = 'universal'):
+    """Get the all_missing attribute for an internal metadata column.
+
+    This is a wrapper around methods from internal_metadata.py
+    Get the HDF5 attribute "all_missing" from a column in
+    the internal universal or author_annot metadata for a
+    given dataset.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+        column: String. The name of the desired column.
+        var: String. Must be "cell" or "gene". Indicates
+            the metadata to be queried.
+        metadata: String. Must be "universal" or "author_annot".
+            Indicates the metadata to be queried.
+
+    Returns:
+        Whatever is at the "all_missing" HDF5 attribute of the
+        requested column.
+
+    Raises:
+        ValueError: If var or metadata is passed an invalid value.
+    """
+    if metadata == 'universal':
+        if var == 'cell':
+            return(im__.get_cell_univ_col_all_missing(uuid, column))
+        elif var == 'gene':
+            return(im__.get_gene_univ_col_all_missing(uuid, column))
+        else:
+            raise ValueError('var must be \"cell\" or \"gene\"!')
+    elif metadata == 'author_annot':
+        if var == 'cell':
+            return(im__.get_cell_aa_col_all_missing(uuid, column))
+        elif var == 'gene':
+            return(im__.get_gene_aa_col_all_missing(uuid, column))
+        else:
+            raise ValueError('var must be \"cell\" or \"gene\"!')
+    else:
+        raise ValueError('metadata must be \"universal\" or \"author_annot\"!')
 
 def main():
     pass

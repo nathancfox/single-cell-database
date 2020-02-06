@@ -98,9 +98,20 @@ _EM_COLUMN_DESCRIPTIONS = {
             '    simple, non-negative integer.\n'
             '    e.g. \"5402\"'
         ),
+    'author_clusters':
+        (
+            '04. Author Clusters\n'
+            '    Whether or not the author provided cell clusters. Must be\n'
+            '    one of these two values: {\"True\", \"False\"}. Should be\n'
+            '    \"True\" if cell clusters are provided by the author. They do\n'
+            '    not have to be annotated, as long as some type of cell\n'
+            '    grouping is provided. This can be \"True\", even if all cells\n'
+            '    are in the same group, as long as this aligns with the\n'
+            '    author\'s report. Should be \"False\" otherwise.'
+        ),
     'condition':
         (
-            '04. Condition\n'
+            '05. Condition\n'
             '    Whether or not these cells fall under a disease condition\n'
             '    or an experimental condition. Must be one of these two\n'
             '    values: {\"True\", \"False\"}. Should be False if all values\n'
@@ -112,7 +123,7 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'date_generated':
         (
-            '05. Date Generated\n'
+            '06. Date Generated\n'
             '    The date that these data were created. Typically, the date\n'
             '    of the publication reporting this dataset is used.\n'
             '    Must be in YYYY-MM-DD format.\n'
@@ -120,7 +131,7 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'count_format':
         (
-            '06. Count Format\n'
+            '07. Count Format\n'
             '    The format of the expression values in the actual data.\n'
             '    Refers to the normalization state of the data. There can be\n'
             '    multiple values here, delimited by \";\". The first value\n'
@@ -137,19 +148,19 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'umis':
         (
-            '07. UMIs\n'
+            '08. UMIs\n'
             '    Whether or not the read counts were quantified using UMIs\n'
             '    or not. Must be one of these two values: {\"True\", \"False\"}.'
         ),
     'spikeins':
         (
-            '08. Spike-ins\n'
+            '09. Spike-ins\n'
             '    Whether or not spike-in transcripts were included.\n'
             '    Must be one of these two values: {\"True\", \"False\"}.'
         ),
     'technology':
         (
-            '09. Technology\n'
+            '10. Technology\n'
             '    The protocol used to capture and sequence the reads.\n'
             '    Should be all lowercase and only alphanumeric.\n'
             '    Enter \"LIST\" to view existing values.\n'
@@ -157,14 +168,14 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'doi':
         (
-            '10. DOI\n'
+            '11. DOI\n'
             '    The DOI for the publication that presented these data.\n'
             '    Must be in minimal format\n'
             '    e.g. \"10.1038/s41467-019-13056-x\"'
         ),
     'accession':
         (
-            '11. Accession\n'
+            '12. Accession\n'
             '    The accession number, if available, for the data. This\n'
             '    can be a GEO Series ID, an ArrayExpress ID, or something\n'
             '    else similar.\n'
@@ -172,14 +183,14 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'date_integrated':
         (
-            '12. Date Integrated\n'
+            '13. Date Integrated\n'
             '    The date that this dataset was entered into this database.\n'
             '    Must be in YYYY-MM-DD format.\n'
             '    e.g. \"2019-01-01\"'
         ),
     'uuid':
         (
-            '13. UUID\n'
+            '14. UUID\n'
             '    The UUID associated with this entry in the database.\n'
             '    Should be generated with the python method: uuid.uuid4()\n'
             '    Must be in the string form of a UUID:\n'
@@ -190,7 +201,7 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'gillis_lab':
         (
-            '14. Gillis Lab\n'
+            '15. Gillis Lab\n'
             '    Whether or not the dataset was scraped from a repository.\n'
             '    False if it is internally generated data.\n'
             '    Must be one of these two values: {\"True\", \"False\"}.'
@@ -200,22 +211,24 @@ _EM_COLUMN_INDEX = {
     'species'        : 0,
     'tissue'         : 1,
     'number_of_cells': 2,
-    'condition'      : 3,
-    'date_generated' : 4,
-    'count_format'   : 5,
-    'umis'           : 6,
-    'spikeins'       : 7,
-    'technology'     : 8,
-    'doi'            : 9,
-    'accession'      : 10,
-    'date_integrated': 11,
-    'uuid'           : 12,
-    'gillis_lab'     : 13
+    'author_clusters': 3,
+    'condition'      : 4,
+    'date_generated' : 5,
+    'count_format'   : 6,
+    'umis'           : 7,
+    'spikeins'       : 8,
+    'technology'     : 9,
+    'doi'            : 10,
+    'accession'      : 11,
+    'date_integrated': 12,
+    'uuid'           : 13,
+    'gillis_lab'     : 14
 }
 _EM_COLUMN_MANDATORY = {
     'species'        : True,
     'tissue'         : False,
     'number_of_cells': True, 
+    'author_clusters': True,
     'condition'      : False,
     'date_generated' : True,
     'count_format'   : True,
@@ -336,12 +349,33 @@ _IMU_CELL_COLUMN_MANDATORY = {
     'uuid'           : True
 }
 
-_IMU_GENE_COLUMN_DESCRIPTIONS = {}
+_IMU_GENE_COLUMN_DESCRIPTIONS = {
+    'Accession':
+        (
+            '01. Accession\n'
+            '    Any standardized gene ID. These are typically accession numbers\n'
+            '    from a gene database, e.g. an ENSEMBL gene ID. These must be\n'
+            '    unique among all genes in the dataset.'
+        ),
+    'Gene':
+        (
+            '02. Gene\n'
+            '    Any human-readable, non-standardized gene ID. These are typically\n'
+            '    human-readable "common names", e.g. TP53. These do not have to\n'
+            '    be unique among genes in a dataset.'
+        )
+}
 # This is mirrored in the access.R file.
 # If you ever change this, MAKE SURE TO UPDATE
 # THE ONE IN THE access.R FILE!
-_IMU_GENE_COLUMN_INDEX = {}
-_IMU_GENE_COLUMN_MANDATORY = {}
+_IMU_GENE_COLUMN_INDEX = {
+    'Accession' : 0,
+    'Gene'      : 1
+}
+_IMU_GENE_COLUMN_MANDATORY = {
+    'Accession' : True,
+    'Gene'      : True
+}
 
 _TISSUE_LIST = {
     'Nervous':

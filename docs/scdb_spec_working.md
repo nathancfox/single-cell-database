@@ -79,6 +79,10 @@ multiple values (e.g. if a cell came from a pooled sample of both male and femal
 indicates that the data is available, but unusable, as opposed to data that is missing, but might
 be filled in by inquiring with the authors.
 
+All fields must have a "all\_missing" attribute associated with them. This is True if the column
+is entirely missing ("-1") and False otherwise. This allows finding datasets with non-missing
+desired fields with constant lookup time.
+
 All fields may optionally have a "description" attribute associated with them. This provides any
 information needed to interpret the values of the field, not the generic description of the field
 itself (e.g. For the "condition" field, an appropriate "description" would be "postnatal day" for
@@ -101,7 +105,17 @@ string may be empty, but the attribute must exist anyway.
 
 #### Gene Specific Universal Metadata <a name="gene_specific_universal_metadata_schema"></a>
 
-An entry Must contain "Gene", "Accession", or both, but it may not omit both fields.
+All fields must exist for every entry. If a value is missing, it should be filled with "-1". If a
+value does not fit the specification, it must be filled with "OTHER".
+
+All fields must have a "all\_missing" attribute associated with them. This is True if the column
+is entirely missing ("-1") and False otherwise. This allows finding datasets with non-missing
+desired fields with constant lookup time.
+
+All fields may optionally have a "description" attribute associated with them. This provides any
+information needed to interpret the values of the field, not the generic description of the field
+itself (e.g. For the "Accession" field, a description could be "Ensemble IDs from Release 99", but
+not "unique gene IDs").
 
 | Field | Description | Possible Values |
 |:------|:------------|:----------------|
@@ -121,6 +135,10 @@ universal metadata, but it will still be stored in its original form if necessar
 No edits may be made to this metadata. It should be stored exactly as is. In general, cell-specific
 metadata is more desired than gene\_specific metadata.
 
+All fields must have a "all\_missing" attribute associated with them. This is True if the column
+is entirely missing ("-1") and False otherwise. This allows finding datasets with non-missing
+desired fields with constant lookup time.
+
 All fields may optionally have a "description" attribute associated with them. This provides any
 information needed to interpret the values of the field, or a generic description of the field
 itself (e.g. For a "well" field, an appropriate "description" would be "384-well plate well in
@@ -139,6 +157,7 @@ stored. If an entry does not match the schema, or contains multiple values that 
 |species|Yes|The species of origin for the cells in this entry. Should match the format for the internal universal metadata field. Multiple species/strains may be included with a ";" (semicolon) delimiter.|e.g. "Homo sapiens" or "Mus musculus;Escherichia coli\|K-12"|
 |tissue|No|The tissue of origin for the cells in this entry. Should match the format for the internal universal metadata field and be taken from the "Tissue List", described in the Appendix. Multiple tissues in a dataset may be included with a ";" (semicolon) delimiter.|e.g. "brain", "kidney;blood"|
 |number\_of\_cells|Yes|The number of cells in this entry. Should be a non-negative integer.|e.g. "4028"|
+|author\_clusters|Yes|Whether or not the author(s) provided cell groupings or clusters. This should be "True" even if the clusters are unannotated.|"True" or "False"|
 |condition|No|Whether or not the cells in this entry fall under an experimental or disease condition. If any cells in this entry have anything other than "NORMAL" or "-1" in the internal universal metadata field "condition", this value should be "True".|"True" or "False"|
 |date\_generated|Yes|The date that this entry was generated. Typically, the date on the publication reporting these data is used. Must be in YYYY-MM-DD format.|e.g. "2019-01-01"|
 |count\_format|Yes|The format of the expression values in the expression matrix(ces) in this entry. Refers to the normalization state of the data. The number of values here must match the number of expression matrices in the entry. Multiple values should be ";" (semicolon) delimited.|Must be from this set: {"raw", "cpm", "tpm", "rpkm", "fpkm"}|
@@ -335,9 +354,10 @@ in both languages, but a few are language-specific. They are described below.
 |`get_gene_author_annot(uuid)`|Python, R|Get the internal gene-specific author annotated metadata as a dataframe from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_batch_key(uuid)`|Python, R|Get the "batch\_key" attribute for the internal cell-specific universal metadata field "batch" from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_cell_ids(uuid)`|Python, R|Get the cell IDs as a vector from the `expr_mat.loom` file that corresponds to the UUID.|
-|`get_gene_ids(uuid, accession=False)`|Python, R|Get the gene IDs as a vector from the `expr_mat.loom` file that corresponds to the UUID.|
+|`get_gene_ids(uuid, accession=True)`|Python, R|Get the gene IDs as a vector from the `expr_mat.loom` file that corresponds to the UUID.|
+|`get_column_allmissing(uuid, column, var='cell', metadata='universal')`|Python, R|Get the "all_missing" attribute for the requested column from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_column_description(uuid, column, var='cell', metadata='universal')`|Python, R|Get the "description" attribute for the requested column from the `expr_mat.loom` file that corresponds to the UUID.|
-|`get_anndata(uuid, **kwargs)`|Python|Get the entire entry corresponding to the UUID as an AnnData object.|
+|`get_anndata(uuid, keep_missing='both', **kwargs)`|Python|Get the entire entry corresponding to the UUID as an AnnData object.|
 |`get_sce(uuid, assay_for_matrix='counts', counts_assay=NULL, logcounts_assay=NULL`|R|Get the entire entry corresponding to the UUID as a SingleCellExperiment object.|
 
 They all have internal documentation. Python code have Google-style docstrings and R functions have
@@ -391,16 +411,16 @@ nodes and on `tyrone`, but with a synchronized UID to enable permissions across 
 Database management is all in Python 3 and relies on a library of functions written specifically for
 this project.
 
-Currently, adding a new entry happens in an interactive Python session. It is relatively trivial
-and takes <10 minutes if the data is available in the following format:
+Currently, adding a new entry happens in an interactive Python session. It is relatively easy
+and takes ~10 minutes if the data is available in the following format:
 
 1. Expression matrices as gene x cell numpy arrays.
 2. Cell and gene IDs as numpy arrays.
 3. Author annotated metadata as Pandas dataframes.
 
-Creating the universal metadata is done manually in Pandas from the author annotated metadata.
+**Note:** Creating the universal metadata is done manually in Pandas from the author annotated metadata.
 
-There are single functions that accomplish the following tasks:
+To speed up the process, there are single functions that accomplish the following tasks:
 
 1. Given an expression matrix, cell IDs, and gene IDs, create a new loom file and store the data.
 2. Given a Pandas dataframe, store it as universal or author annotated metadata for a given UUID.
@@ -421,8 +441,8 @@ To that end, there are single functions that accomplish the following tasks.
 3. Process a CSV-like file into an expression matrix, cell IDs, and gene IDs numpy arrays.
 4. Parse a SOFT metadata file for single cell characteristics and store in a Pandas dataframe.
 
-Together, this means that adding a new GEO Series-sourced entry typically takes ~20 minutes and
-looks like this:
+Together, this means that adding a new GEO Series-sourced entry with a single data matrix
+typically takes ~30-40 minutes and looks like this:
 
 1. Start an interactive Python session.
 2. Set the GSE ID.
@@ -445,8 +465,14 @@ looks like this:
 14. Run a function to store the internal universal metadata.
 15. Run a function to store internal metadata field "description" attributes if necessary.
 16. Run a function to store the external metadata.
-17. Add a `notes.tsv` entry if there is missing data to be requested from the authors. Send an
-    email if necessary.
+17. Run a function to store a `notes.tsv` entry if there is missing data to be requested from the
+    authors. Send an email if necessary.
+
+If the authors report their data split into multiple pieces, this process slows down enormously
+and could take upwards of an hour. For example, sometimes authors report their cells as separate
+10X Cell Ranger results. Or they will split their data up by sample. If this is case, everything
+has to be manually aggregated and checked for quality assumptions. The time this takes is
+dependent on the user's level of skill with pandas, numpy, and unix tools.
 
 About two thirds of this process is straightforward and accessible to anyone with light
 computational experience. The other third is the manual curation, where speed and accuracy heavily
@@ -467,9 +493,9 @@ versions of the SCDB and this specification.
   any dataframes submitted as cell-specific universal metadata are checked to verify that they are
   the right shape and that all the columns are correctly named. But the "sex" field is not verified
   to ensure that all its values are "M", "F", "-1" or "OTHER".
-* Maintenace validation code. This is code that runs regularly to ensure that data corruption hasn't
-  occurred. The external metadata could include a "checksum" field that holds a hashsum value for
-  the corresponding `expr_mat.loom` file. That way if anything changes unexpectedly in the file,
+* Maintenance validation code. This is code that runs regularly to ensure that data corruption
+  hasn't occurred. The external metadata could include a "checksum" field that holds a hashsum value
+  for the corresponding `expr_mat.loom` file. That way if anything changes unexpectedly in the file,
   e.g. from corrupted data or an accidental overwrite, an alert is raised. There could be a check to
   make sure that all entries in the external metadata have corresponding folders. There could be
   checks to ensure that the external metadata fields that come from the internal metadata agree.
