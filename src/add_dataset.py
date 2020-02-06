@@ -10,6 +10,9 @@ LICENSE: GNU General Public License v3.0 (see LICENSE file)
 # import sys
 # sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import os
+import numpy as np
+import pandas as pd
+from . import access as ac__
 from . import create_loom as cl__
 from . import external_metadata as em__
 from . import geo_access as ga__
@@ -104,7 +107,7 @@ def setup():
     """
     print('Add a New Dataset to the Single-Cell Database')
     print('=============================================')
-    print('GEO Series ID:')
+    print('GEO Series ID')
     new_gse_id = input('> ')
     set_new_entry(new_gse_id)
     global _new_uuid
@@ -158,11 +161,24 @@ def add_external_metadata():
     global _gse_id
     global _new_uuid
     if _new_uuid == '':
-        raise AssertionError('Do not run this before download_files()!')
+        raise AssertionError('Do not run this without add_dataset._new_uuid!')
+    if _gse_id == '':
+        raise AssertionError('Do not run this without add_dataset._gse_id!')
     loop_dict = {'y': False, 'n': True}
     loop = True
     while loop:
+        with ac__.get_h5_conn(_new_uuid) as lfile:
+            species = ';'.join(np.unique(lfile['col_attrs/species'][:]))
+            tissue = ';'.join(np.unique(lfile['col_attrs/tissue'][:]))
+            num_cells = lfile['matrix'].shape[1]
+        aut_clust = not ac__.get_column_allmissing(_new_uuid, 'cluster',
+                                                    var='cell',
+                                                    metadata='universal')
         pre_fill = {
+                     'species': species,
+                     'tissue': tissue,
+                     'number_of_cells': num_cells,
+                     'author_clusters': aut_clust,
                      'accession': _gse_id,
                      'date_integrated': gu__.get_timestamp(mode = 'date'),
                      'uuid': _new_uuid,
@@ -181,6 +197,80 @@ def add_external_metadata():
         if gu__.get_yes_or_no(u'\u2191 New Entry. Are you sure? (y/n): '):
             loop = False
     em__.append_row(new_row)
+
+def add_note(uuid=None):
+    """Interactively adds a note about the new entry.
+
+    Args:
+        uuid: String. Indicates the UUID the note is for. If None,
+            global _new_uuid will be used.
+
+    Returns: None
+    Raises: None
+    """
+    global _new_uuid
+    if uuid is None:
+        try:
+            ac__.get_loom_filename(_new_uuid)
+        except ValueError as e:
+            raise ValueError('add_dataset._new_uuid is an invalid UUID!') from e
+        uuid = _new_uuid
+    else:
+        try:
+            ac__.get_loom_filename(uuid)
+        except ValueError as e:
+            raise ValueError('uuid is an invalid UUID!') from e
+    notes = pd.read_csv(os.path.join(GC.get_PATH_TO_DATABASE(), 'notes.tsv'),
+                        sep='\t', header=None, names=['uuid', 'desc'])
+    notes.index = notes['uuid']
+    if uuid not in list(notes.index):
+        print(f'UUID: {uuid}')
+        print(f'Enter your note on a single line')
+        new_note = input('> ')
+        notes = notes.append(pd.DataFrame({'uuid': [uuid], 'desc': [new_note]}), ignore_index=True)
+        print(notes)
+        notes.to_csv(os.path.join(GC.get_PATH_TO_DATABASE(), 'notes.tsv'),
+                     sep='\t', header=False, index=False)
+        return
+    else:
+        print(f'UUID: {uuid}')
+        print('This UUID already has a note!')
+        while True:
+            print('Enter a command.')
+            print('    [V]IEW      : View the current note')
+            print('    [O]VERWRITE : Overwrite the current note')
+            print('    [A]PPEND    : Append to the current note')
+            print('    [C]ANCEL    : Cancel this operation')
+            print()
+            choice = gu__.get_command(['VIEW', 'OVERWRITE', 'APPEND', 'CANCEL'],
+                                    prompt='> ', first_letter=True,
+                                    case_sensitive=False)
+            if choice == 'VIEW':
+                print()
+                print(gu__.pretty_str_text(notes.loc[uuid, 'desc'],
+                                        width=50))
+                print()
+                continue
+            elif choice == 'OVERWRITE':
+                print()
+                print('Enter your new description on a single line.')
+                new_desc = input('> ')
+                notes.loc[uuid, 'desc'] = new_desc
+                notes.to_csv(os.path.join(GC.get_PATH_TO_DATABASE(), 'notes.tsv'),
+                             sep='\t', header=False, index=False)
+                return
+            elif choice == 'APPEND':
+                print()
+                print('Enter your addition on a single line.')
+                new_desc = input('> ')
+                notes.loc[uuid, 'desc'] = notes.loc[uuid, 'desc'] + new_desc
+                notes.to_csv(os.path.join(GC.get_PATH_TO_DATABASE(), 'notes.tsv'),
+                             sep='\t', header=False, index=False)
+                return
+            elif choice == 'CANCEL':
+                return
+            else:
+                raise AssertionError('general_utils.get_command() returned an invalid value!')
 
 def main():
     pass
