@@ -164,12 +164,12 @@ def get_new_row_input(pre_fill = None):
                 print('ERROR: This column does not have a \"LIST\" option.')
                 print()
             continue
-        elif GC._EM_COLUMN_MANDATORY[colnames[col_idx]] and (user_input) == '':
+        elif GC._EM_COLUMN_MANDATORY[colnames[col_idx]] and (user_input == '' or user_input == '-1'):
             if pre_fill is not None:
                 if colnames[col_idx] in pre_fill.keys():
                     raise ValueError(f'{colnames[col_idx]} is mandatory! '
                                       'It cannot be pre-filled with an '
-                                      'empty string!')
+                                      'empty string or \"-1\" missing value!')
             else:
                 print()
                 print('ERROR: This column is mandatory, please enter a value!')
@@ -398,7 +398,7 @@ def main():
 
 # Every time this module is run or imported, check
 # the integrity of the global constants.
-# verify_global_constants()
+verify_global_constants()
 
 if __name__ == '__main__':
     main()
