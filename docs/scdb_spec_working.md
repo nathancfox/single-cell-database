@@ -358,7 +358,7 @@ in both languages, but a few are language-specific. They are described below.
 |`get_column_allmissing(uuid, column, var='cell', metadata='universal')`|Python, R|Get the "all_missing" attribute for the requested column from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_column_description(uuid, column, var='cell', metadata='universal')`|Python, R|Get the "description" attribute for the requested column from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_note(uuid)`|Python, R|Get the note from the "notes.tsv" file for the dataset that corresponds to the UUID.|
-|`get_anndata(uuid, keep_missing='both', **kwargs)`|Python|Get the entire entry corresponding to the UUID as an AnnData object.|
+|`get_anndata(uuid, keep_missing='both', combine='none', **kwargs)`|Python|Get the entire entry corresponding to the UUID as an AnnData object.|
 |`get_sce(uuid, assay_for_matrix='counts', counts_assay=NULL, logcounts_assay=NULL`|R|Get the entire entry corresponding to the UUID as a SingleCellExperiment object.|
 
 They all have internal documentation. Python code have Google-style docstrings and R functions have

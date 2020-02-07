@@ -105,11 +105,18 @@ def get_loom_conn(uuid):
     lfile = lp.connect(get_loom_filename(uuid), 'r')
     return(lfile)
 
-def get_anndata(uuid, keep_missing='both', **kwargs):
+def get_anndata(uuid, keep_missing='both', 
+                combine='none', **kwargs):
     """Get an AnnData object from a dataset.
 
     Given a UUID, loads the associated loom file
     completely into memory into a scanpy AnnData object.
+    Unlike most other access functions, this function
+    can edit the schema. To facilitate pipelining
+    into other tools, the user can choose to concatenate
+    the universal and author_annot internal metadata
+    into the adata.var and adata.obs dataframes instead
+    of leaving the author_annot in adata.uns.
 
     Args:
         uuid: String. UUID of the desired dataset
@@ -123,6 +130,16 @@ def get_anndata(uuid, keep_missing='both', **kwargs):
             will be dropped from both cell-specific and gene-specific
             internal universal metadata. Does not apply to
             author-annotated metadata.
+        combine: String. Must be 'cells', 'genes', 'both',
+            or 'none'. Indicates which internal metadata to
+            combine. If 'cells', the cell-specific internal
+            metadata will be combined into a single dataframe,
+            stored under adata.obs. Universal columns will have
+            the prefix "scdb_" added to their names. Vice versa
+            for 'genes'. If 'both', then both will be combined.
+            If 'none', then neither will be combined and the
+            author_annot internal metadata will be left in
+            adata.uns.
         **kwargs: Keyword arguments passed to
             scanpy.read_loom()
     
@@ -134,6 +151,9 @@ def get_anndata(uuid, keep_missing='both', **kwargs):
     """
     if keep_missing not in ('cells', 'genes', 'both', 'none'):
         raise ValueError('keep_missing must be \"cells\", \"genes\", '
+                            '\"both\", or \"none\"!')
+    if combine not in ('cells', 'genes', 'both', 'none'):
+        raise ValueError('combine must be \"cells\", \"genes\", '
                             '\"both\", or \"none\"!')
     # Handles the loom convention that genes may be named
     # in the 'Gene' or 'Accession' row attribute.
@@ -186,8 +206,25 @@ def get_anndata(uuid, keep_missing='both', **kwargs):
     adata.obs = adata.obs[sorted(cell_columns_to_keep,
                                  key = lambda x: GC._IMU_CELL_COLUMN_INDEX[x])]
     adata.uns['batch_key'] = get_batch_key(uuid)
-    adata.uns['cell_author_annot'] = get_cell_author_annot(uuid)
-    adata.uns['gene_author_annot'] = get_gene_author_annot(uuid)
+    if combine == 'none':
+        adata.uns['gene_author_annot'] = get_gene_author_annot(uuid)
+        adata.uns['cell_author_annot'] = get_cell_author_annot(uuid)
+    else:
+        if combine == 'genes' or combine == 'both':
+            adata.var.columns = list(map(lambda x: 'scdb_' + x, adata.var.columns))
+            gene_aa = get_gene_author_annot(uuid)
+            gene_aa.index = adata.var.index
+            adata.var = pd.concat([adata.var, gene_aa], axis=1)
+        if combine == 'cells' or combine == 'both':
+            adata.obs.columns = list(map(lambda x: 'scdb_' + x, adata.obs.columns))
+            cell_aa = get_cell_author_annot(uuid)
+            cell_aa.index = adata.obs.index
+            adata.obs = pd.concat([adata.obs, cell_aa], axis=1)
+    if combine == 'genes':
+        adata.uns['cell_author_annot'] = get_cell_author_annot(uuid)
+    elif combine == 'cells':
+        adata.uns['gene_author_annot'] = get_gene_author_annot(uuid)
+
     return(adata)
 
 def get_cell_univ(uuid, keep_missing = True):
