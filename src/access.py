@@ -498,7 +498,7 @@ def get_expr_mat_names(uuid):
         return(names)
 
 def get_column_allmissing(uuid, column, var = 'cell', metadata = 'universal'):
-    """Get the all_missing attribute for an internal metadata column.
+    """Gets the all_missing attribute for an internal metadata column.
 
     This is a wrapper around methods from internal_metadata.py
     Get the HDF5 attribute "all_missing" from a column in
@@ -536,6 +536,36 @@ def get_column_allmissing(uuid, column, var = 'cell', metadata = 'universal'):
             raise ValueError('var must be \"cell\" or \"gene\"!')
     else:
         raise ValueError('metadata must be \"universal\" or \"author_annot\"!')
+
+def get_note(uuid):
+    """Gets the note for a dataset.
+
+    Retrieves the note for a dataset from the 'notes.tsv' file
+    in the root of the database. These are typically small notes
+    used when an entry is still in progress or being edited
+    in the future.
+
+    Args:
+        uuid: String. The UUID of the desired dataset.
+    
+    Returns:
+        A string containing the note. If there is no note,
+        an empty string is returned.
+
+    Raises:
+        ValueError: If the UUID is not in the database.
+    """
+    path_to_notes = os.path.join(GC.get_PATH_TO_DATABASE(), "notes.tsv")
+    notes = pd.read_csv(f'{path_to_notes}', sep='\t', header=None,
+                        index_col=0, names=['note'])
+    try:
+        get_loom_filename(uuid)
+    except ValueError as e:
+        raise ValueError('Not a valid UUID!') from e
+    if uuid in notes.index:
+        return(notes.loc[uuid, 'note'])
+    else:
+        return('')
 
 def main():
     pass
