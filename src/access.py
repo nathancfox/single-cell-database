@@ -18,8 +18,10 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 import scipy.sparse
+import requests
 from . import external_metadata as em__
 from . import internal_metadata as im__
+from . import general_utils as gu__
 from . import global_constants as GC
 
 def get_loom_filename(uuid):
@@ -603,6 +605,86 @@ def get_note(uuid):
         return(notes.loc[uuid, 'note'])
     else:
         return('')
+
+def get_bibtex(uuid):
+    """Gets the BibTeX citation for an entry.
+
+    Resolves the DOI for a dataset to generate a BibTeX citation
+    as a string.
+
+    Args:
+        uuid: String. UUID of the desired dataset.
+    
+    Returns:
+        A string containing the BibTeX citation.
+    
+    Raises:
+        RunTimeError: If the response HTTP status code is anything
+            200 (Success).
+    """
+    doi = uuid_to_row(uuid)['doi']
+    response = requests.get(f'https://doi.org/{doi}',
+                            headers={'Accept': 'application/x-bibtex'})
+    if response.status_code != 200:
+        raise RuntimeError(f'Status Code is {response.status_code}, not 200!')
+    return(response.text)
+
+def export_bibtex(uuids, outfile, append=False):
+    """Creates BibTeX citations for the requested datasets.
+
+    Resolves the DOI for each requested dataset and exports
+    the resulting list of BibTeX citations to outfile. Does
+    not export duplicate citations.
+
+    Args:
+        uuids: String or list of Strings. The UUID(s) of the
+            desired datasets. Can be a list, or a single
+            string.
+        outfile: String. The path to the file the citations
+            should be written to.
+        append: Boolean. If True, the outfile will be
+            appended to. If False, the outfile will be
+            overwritten.
+    
+    Returns: None
+    Raises: None
+    """
+    if type(uuids) == str:
+        uuids = [uuids]
+    error_uuids = []
+    invalid_uuids = []
+    bibtex_citations = set()
+    for uuid in uuids:
+        try:
+            bt = get_bibtex(uuid)
+        except RuntimeError as e:
+            error_uuids.append(uuid)
+            continue
+        except IndexError as e:
+            invalid_uuids.append(uuid)
+            continue
+        bibtex_citations.add(bt)
+    if len(invalid_uuids) > 0:
+        print('ERROR: The following UUIDs are invalid:')
+        print(gu__.pretty_str_list(invalid_uuids, indent='    ',
+                                   sep='', one_per_line=True))
+        print()
+    if len(error_uuids) > 0:
+        print('ERROR: The following UUIDs produced a non-200 HTTP status code:')
+        print(gu__.pretty_str_list(error_uuids, indent='    ',
+                                   sep='', one_per_line=True))
+        print()
+    if append:
+        file_open_flags = 'a'
+    else:
+        file_open_flags = 'w'
+    with open(outfile, file_open_flags) as f:
+        for i, bt in enumerate(bibtex_citations):
+            f.write(bt)
+            f.write('\n\n')
+    if len(invalid_uuids) > 0 or len(error_uuids) > 0:
+        if len(bibtex_citations) > 0:
+            print('The remaining UUIDs were exported successfully.')
 
 def main():
     pass

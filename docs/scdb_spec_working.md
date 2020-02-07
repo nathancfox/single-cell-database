@@ -358,6 +358,8 @@ in both languages, but a few are language-specific. They are described below.
 |`get_column_allmissing(uuid, column, var='cell', metadata='universal')`|Python, R|Get the "all_missing" attribute for the requested column from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_column_description(uuid, column, var='cell', metadata='universal')`|Python, R|Get the "description" attribute for the requested column from the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_note(uuid)`|Python, R|Get the note from the "notes.tsv" file for the dataset that corresponds to the UUID.|
+|`get_bibtex(uuid)`|Python, R|Get a BibTeX citation for the entry corresponding to the UUID.|
+|`export_bibtex(uuids, outfile, append=False)`|Python, R|Export a collection of BibTeX citations to a file.|
 |`get_anndata(uuid, keep_missing='both', combine='none', **kwargs)`|Python|Get the entire entry corresponding to the UUID as an AnnData object.|
 |`get_sce(uuid, assay_for_matrix='counts', counts_assay=NULL, logcounts_assay=NULL`|R|Get the entire entry corresponding to the UUID as a SingleCellExperiment object.|
 
@@ -399,8 +401,8 @@ The following non-standard libraries are dependencies for the access functions d
 
 |Language|Dependencies|
 |:-------|:-----------|
-|Python|numpy, pandas, h5py, loompy, scanpy|
-|R|hdf5r, loomR, SingleCellExperiment|
+|Python|numpy, pandas, h5py, loompy, scanpy, requests|
+|R|hdf5r, loomR, SingleCellExperiment, httr|
 
 ## Adding Entries to the SCDB <a name="adding_entries_to_the_scdb"></a>
 
