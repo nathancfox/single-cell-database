@@ -154,6 +154,9 @@ stored. If an entry does not match the schema, or contains multiple values that 
 
 | Field | Mandatory | Description | Possible Values |
 |:------|:----------|:------------|:----------------|
+|title|No|The title of the publication that reported these data.|All characters must be lowercase alphanumeric, " "(whitespace), "\_"(underscore), or "-"(hyphen)|
+|authors|No|The author(s) of the publication that reported these data.|A ", "(comma whitespace)-delimited list of the authors. No capitalization or punctuation rules inside an author's name. All author names must be in the format "GIVEN\_NAME FAMILY\_NAME". The first author should be first, but all other order is not guaranteed.|
+|abstract|No|The abstract of the publication that reported these data.|Must be a single string with no line breaks or leading/trailing whitespace.|
 |species|Yes|The species of origin for the cells in this entry. Should match the format for the internal universal metadata field. Multiple species/strains may be included with a ";" (semicolon) delimiter.|e.g. "Homo sapiens" or "Mus musculus;Escherichia coli\|K-12"|
 |tissue|No|The tissue of origin for the cells in this entry. Should match the format for the internal universal metadata field and be taken from the "Tissue List", described in the Appendix. Multiple tissues in a dataset may be included with a ";" (semicolon) delimiter.|e.g. "brain", "kidney;blood"|
 |number\_of\_cells|Yes|The number of cells in this entry. Should be a non-negative integer.|e.g. "4028"|

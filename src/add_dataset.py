@@ -10,6 +10,7 @@ LICENSE: GNU General Public License v3.0 (see LICENSE file)
 # import sys
 # sys.path.append('/home/scdb_codebase/single_cell_database/src')
 import os
+import re
 import numpy as np
 import pandas as pd
 from . import access as ac__
@@ -174,7 +175,14 @@ def add_external_metadata():
         aut_clust = not ac__.get_column_allmissing(_new_uuid, 'cluster',
                                                     var='cell',
                                                     metadata='universal')
+        doi = input('Enter the DOI:\n> ')
+        title, authors = em__.get_title_and_author(doi)
+        title = title.lower()
+        title = re.sub(r'[^a-z _-]', r'', title)
+        authors = ', '.join(authors)
         pre_fill = {
+                     'title': title,
+                     'authors': authors,
                      'species': species,
                      'tissue': tissue,
                      'number_of_cells': num_cells,
@@ -183,6 +191,21 @@ def add_external_metadata():
                      'date_integrated': gu__.get_timestamp(mode = 'date'),
                      'uuid': _new_uuid,
                    }
+        try:
+            abstract = em__.get_abstract(doi)
+        except:
+            abstract = None
+        if abstract is not None:
+            print('I attempted to scrape this abstract.')
+            print('\nAbstract:\n')
+            print(gu__.pretty_str_text(abstract, width = 60,
+                                       indent='    '))
+            print()
+            correct = gu__.get_yes_or_no('Is this correct? (y/n)\n> ')
+            if correct:
+                pre_fill['abstract'] = abstract
+            else:
+                print('\nMy bad. You can fill it in manually later.\n')
         new_row = em__.get_new_row_input(pre_fill = pre_fill)
         colnames = em__.get_column_names()
         print()

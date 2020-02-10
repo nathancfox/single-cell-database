@@ -553,6 +553,9 @@ get_extern_md <- function() {
                      sep = "\t",
                      quote = "",
                      stringsAsFactors = TRUE)
+    df$title <- as.character(df$title)
+    df$authors <- as.character(df$authors)
+    df$abstract <- as.character(df$abstract)
     df$date_generated <- as.Date(df$date_generated)
     df$doi <- as.character(df$doi)
     df$accession <- as.character(df$accession)

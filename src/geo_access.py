@@ -412,6 +412,31 @@ def get_sample_char_from_soft(soft_file):
         
     return(samples) 
 
+def get_summary_from_soft(soft_file):
+    """Gets the Series Summary from a GEO Series SOFT file.
+
+    Args:
+        soft_file: STring. Filepath to the SOFT file to parse.
+
+    Returns:
+        The Series Summary as a string. If there is no Series
+        Summary, the empty string is returned.
+
+    Raises:
+        AssertionError: If there is more than one Series Summary
+            line in the SOFT file.
+    """
+    summary = ''
+    with open(soft_file, 'r') as f:
+        for line in f:
+            if line[:15] == '!Series_summary':
+                if summary == '':
+                    summary = line.split(' = ')[1].strip(' \n\t')
+                else:
+                    raise AssertionError('More than one line starting with '
+                                         '\"!Series_summary\" in file!')
+    return(summary)
+
 def main():
     pass
 

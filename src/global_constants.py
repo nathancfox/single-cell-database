@@ -73,19 +73,44 @@ def get_PATH_TO_METADATA():
         return('/data/single_cell_database/database/external_metadata.tsv')
 
 _EM_COLUMN_DESCRIPTIONS = {
+    'title':
+        (
+            '01. Title\n'
+            '    The title of the publication that published the data.\n'
+            '    e.g. \"Hedgehog stimulates hair follicle neogenesis by\n'
+            '          creating inductive dermis during murine skin\n'
+            '          wound healing.\"'
+        ),
+    'authors':
+        (
+            '02. Authors\n'
+            '    The authors of the publication that published the data.\n'
+            '    This should be a single string containing a list of authors,\n'
+            '    delimited by \", \". The first author must be first, but\n'
+            '    the rest may be in any order. The author names must be in\n'
+            '    the format: \"GIVEN_NAME FAMILY NAME\"\n'
+            '    e.g. \"Chae Ho Lim, Qi Sun, Karan Ratti, Mayumi Ito'
+        ),
+    'abstract':
+        (
+            '03. Abstract\n'
+            '    The abstract of the publication that published the data.\n'
+            '    This should be a single string with no line breaks or\n'
+            '    leading/trailing whitespace.'
+        ),
     'species': 
         (
-            '01. Species\n'
+            '04. Species\n'
             '    The species that the cells originated from. Should be a\n'
             '    two word scientific name in standard format. If there is\n'
             '    additional information, such as a string, it may be added\n'
             '    after a \"|\" delimiter. You can have multiple species/strains\n'
-            '    in a dataset. These should be \";\" delimited.'
+            '    in a dataset. These should be \";\" delimited.\n'
             '    e.g. \"Homo sapiens\", \"Mus musculus;Escherichia coli|K-12\"'
         ),
     'tissue':
         (
-            '02. Tissue\n'
+            '05. Tissue\n'
             '    The tissue/organ that the cells originated from. Must be from\n'
             '    the TISSUE_LIST. Enter \"LIST\" to view the options. Multiple\n'
             '    tissues in a dataset can be \";\" delimited.\n'
@@ -93,14 +118,14 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'number_of_cells':
         (
-            '03. Number of Cells\n'
+            '06. Number of Cells\n'
             '    The number of cells in this dataset. Should just be a\n'
             '    simple, non-negative integer.\n'
             '    e.g. \"5402\"'
         ),
     'author_clusters':
         (
-            '04. Author Clusters\n'
+            '07. Author Clusters\n'
             '    Whether or not the author provided cell clusters. Must be\n'
             '    one of these two values: {\"True\", \"False\"}. Should be\n'
             '    \"True\" if cell clusters are provided by the author. They do\n'
@@ -111,7 +136,7 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'condition':
         (
-            '05. Condition\n'
+            '08. Condition\n'
             '    Whether or not these cells fall under a disease condition\n'
             '    or an experimental condition. Must be one of these two\n'
             '    values: {\"True\", \"False\"}. Should be False if all values\n'
@@ -123,7 +148,7 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'date_generated':
         (
-            '06. Date Generated\n'
+            '09. Date Generated\n'
             '    The date that these data were created. Typically, the date\n'
             '    of the publication reporting this dataset is used.\n'
             '    Must be in YYYY-MM-DD format.\n'
@@ -131,7 +156,7 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'count_format':
         (
-            '07. Count Format\n'
+            '10. Count Format\n'
             '    The format of the expression values in the actual data.\n'
             '    Refers to the normalization state of the data. There can be\n'
             '    multiple values here, delimited by \";\". The first value\n'
@@ -148,19 +173,19 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'umis':
         (
-            '08. UMIs\n'
+            '11. UMIs\n'
             '    Whether or not the read counts were quantified using UMIs\n'
             '    or not. Must be one of these two values: {\"True\", \"False\"}.'
         ),
     'spikeins':
         (
-            '09. Spike-ins\n'
+            '12. Spike-ins\n'
             '    Whether or not spike-in transcripts were included.\n'
             '    Must be one of these two values: {\"True\", \"False\"}.'
         ),
     'technology':
         (
-            '10. Technology\n'
+            '13. Technology\n'
             '    The protocol used to capture and sequence the reads.\n'
             '    Should be all lowercase and only alphanumeric.\n'
             '    Enter \"LIST\" to view existing values.\n'
@@ -168,14 +193,14 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'doi':
         (
-            '11. DOI\n'
+            '14. DOI\n'
             '    The DOI for the publication that presented these data.\n'
             '    Must be in minimal format\n'
             '    e.g. \"10.1038/s41467-019-13056-x\"'
         ),
     'accession':
         (
-            '12. Accession\n'
+            '15. Accession\n'
             '    The accession number, if available, for the data. This\n'
             '    can be a GEO Series ID, an ArrayExpress ID, or something\n'
             '    else similar.\n'
@@ -183,14 +208,14 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'date_integrated':
         (
-            '13. Date Integrated\n'
+            '16. Date Integrated\n'
             '    The date that this dataset was entered into this database.\n'
             '    Must be in YYYY-MM-DD format.\n'
             '    e.g. \"2019-01-01\"'
         ),
     'uuid':
         (
-            '14. UUID\n'
+            '17. UUID\n'
             '    The UUID associated with this entry in the database.\n'
             '    Should be generated with the python method: uuid.uuid4()\n'
             '    Must be in the string form of a UUID:\n'
@@ -201,30 +226,36 @@ _EM_COLUMN_DESCRIPTIONS = {
         ),
     'gillis_lab':
         (
-            '15. Gillis Lab\n'
+            '18. Gillis Lab\n'
             '    Whether or not the dataset was scraped from a repository.\n'
             '    False if it is internally generated data.\n'
             '    Must be one of these two values: {\"True\", \"False\"}.'
         )
 }
 _EM_COLUMN_INDEX = {
-    'species'        : 0,
-    'tissue'         : 1,
-    'number_of_cells': 2,
-    'author_clusters': 3,
-    'condition'      : 4,
-    'date_generated' : 5,
-    'count_format'   : 6,
-    'umis'           : 7,
-    'spikeins'       : 8,
-    'technology'     : 9,
-    'doi'            : 10,
-    'accession'      : 11,
-    'date_integrated': 12,
-    'uuid'           : 13,
-    'gillis_lab'     : 14
+    'title'          : 0,
+    'authors'        : 1,
+    'abstract'       : 2,
+    'species'        : 3,
+    'tissue'         : 4,
+    'number_of_cells': 5,
+    'author_clusters': 6,
+    'condition'      : 7,
+    'date_generated' : 8,
+    'count_format'   : 9,
+    'umis'           : 10,
+    'spikeins'       : 11,
+    'technology'     : 12,
+    'doi'            : 13,
+    'accession'      : 14,
+    'date_integrated': 15,
+    'uuid'           : 16,
+    'gillis_lab'     : 17
 }
 _EM_COLUMN_MANDATORY = {
+    'title'          : False,
+    'authors'        : False,
+    'abstract'       : False,
     'species'        : True,
     'tissue'         : False,
     'number_of_cells': True, 

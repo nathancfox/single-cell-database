@@ -12,6 +12,7 @@ import pandas as pd
 import os
 import re
 import pprint
+import requests
 from . import global_constants as GC
 from . import general_utils as gu__
 
@@ -214,10 +215,19 @@ def write_new_file(df):
     Returns: None
     Raises: None
     """
-    df.to_csv(GC.get_PATH_TO_METADATA(),
-              sep = '\t',
-              header = True,
-              index = False)
+    warning = (
+        'WARNING! You are about to overwrite the external\n'
+        '         metadata file!!! Are you 100% sure you\n'
+        '         want to do this??? (yes/no)\n'
+    )
+    proceed = gu__.get_yes_or_no(f'{warning}\n> ')
+    if proceed:
+        df.to_csv(GC.get_PATH_TO_METADATA(),
+                sep = '\t',
+                header = True,
+                index = False)
+    else:
+        pass
 
 def get_as_dataframe():
     """Gets external metadata as pandas dataframe."""
@@ -293,6 +303,103 @@ def uuid_to_row(uuid_key, columns = None):
                 values.append('NOT_A_VALID_COLUMN')
         values = pd.Series(values, index = columns)
         return(values)
+
+def get_title_and_author(doi):
+    """Gets the title and author for a publication.
+
+    Uses DOI resolution to scrape the title and author for
+    a publication.
+
+    Args:
+        doi: String. The DOI of the desired publication.
+
+    Returns:
+        A 2-member tuple.
+            1) A String: the title
+            2) A list of strings where each string is an
+               author name in the format "GIVEN_NAME FAMILY_NAME".
+               If the first author is labeled, it is at the top
+               of the list.
+    Raises:
+        RuntimeError: If the API request returns a non-200
+            HTTP status code.
+    """
+    response = requests.get(f'https://doi.org/{doi}',
+                            headers={'Accept': 'application/vnd.citationstyles.csl+json'})
+    if response.status_code != 200:
+        raise RuntimeError(f'Status Code is {response.status_code}, not 200!')
+    response = response.json()
+    title = response['title']
+    authors = []
+    for aut in response['author']:
+        if aut['sequence'] == 'first':
+            authors.insert(0, aut['given'] + ' ' + aut['family'])
+        else:
+            authors.append(aut['given'] + ' ' + aut['family'])
+    return((title, authors))
+
+def get_abstract(doi):
+    """Gets the abstract for a publication in PubMed.
+
+    Uses the NCBI Entrez Utilities to search PubMed for the title
+    from a DOI resolution. If there is 1 result, it uses the
+    NCBI Entrez Utilities to retrieve the abstract from the PubMed
+    entry. Note that this is a bit loose. NCBI's eFetch doesn't
+    guarantee an abstract. It returns a long text string that
+    Should contain the abstract, but there aren't helpful
+    delimiters to guarantee the identity of the scraped text.
+
+    Args:
+        doi: String. The DOI of the desired publication. Will be
+            resolved to get the title used in the PubMed search.
+
+    Returns:
+        A string containing the abstract.
+
+    Raises:
+        RuntimeError: If any of the API requests returns a non-200
+            HTTP status code.
+        AssertionError: If the paragraph before the "abstract"
+            violates a light assertion error.
+    """
+    title = get_title_and_author(doi)[0]
+    base_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
+    esearch_options = (
+                          'esearch.fcgi?'
+                          'db=pubmed'
+                         f'&term={title}[title]'
+                          '&retmode=json'
+                      )
+    esearch_response = requests.get(f'{base_url}{esearch_options}')
+    if esearch_response.status_code != 200:
+        raise RuntimeError(f'eSearch returned {esearch_response.status_code}'
+                            ', not 200!')
+    esearch_results = esearch_response.json()
+    if str(esearch_results['esearchresult']['count']) != '1':
+        raise RuntimeError('eSearch returned '
+                          f'{esearch_results["esearchresult"]["count"]} '
+                           'results, not 1! You should parse manually.')
+    result_id = esearch_results['esearchresult']['idlist'][0]
+    efetch_options = (
+                          'efetch.fcgi?'
+                          'db=pubmed'
+                         f'&id={result_id}'
+                          '&retmode=text'
+                          '&rettype=abstract'
+                     )
+    efetch_response = requests.get(f'{base_url}{efetch_options}')
+    if efetch_response.status_code != 200:
+        raise RuntimeError(f'eFetch returned {efetch_response.status_code}'
+                            ', not 200!')
+    efetch_results = efetch_response.text
+    efetch_results = efetch_results.split('\n\n')
+    efetch_results = list(map(lambda x: x.strip().replace('\n', ' '),
+                              efetch_results))
+    if not efetch_results[3].startswith('Author information:'):
+        raise AssertionError('Result violates an assumption. You '
+                             'should parse manually!')
+    return(efetch_results)
+    # return(efetch_results[4])
 
 def verify_global_constants():
     """Run assertion tests on global variables.
