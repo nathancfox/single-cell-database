@@ -366,6 +366,7 @@ in both languages, but a few are language-specific. They are described below.
 |`export_bibtex(uuids, outfile, append=False)`|Python, R|Export a collection of BibTeX citations to a file.|
 |`get_anndata(uuid, keep_missing='both', combine='none', **kwargs)`|Python|Get the entire entry corresponding to the UUID as an AnnData object.|
 |`get_sce(uuid, assay_for_matrix='counts', counts_assay=NULL, logcounts_assay=NULL`|R|Get the entire entry corresponding to the UUID as a SingleCellExperiment object.|
+|`merge_sce(sce1, sce2, keep_author_annot=FALSE, min_common_genes=15000, cell_id_prefix=4)`|R|Attempt to merge 2 SingleCellExperiment objects returned from `get_sce()`.|
 
 They all have internal documentation. Python code have Google-style docstrings and R functions have
 roxygen style function documentation. They are stored in the codebases under
