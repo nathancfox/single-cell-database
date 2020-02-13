@@ -35,6 +35,7 @@ Author  : Nathan Fox
     2. [Access in R](#access_in_r)
     3. [Dependencies](#dependencies)
 5. [Adding Entries to the SCDB](#adding_entries_to_the_scdb)
+    1. [Choosing How to Split Datasets](#choosing_how_to_split_datasets)
 6. [Future Directions](#future_directions)
 7. [Appendix](#appendix)
     1. [Quickstart Description](#quickstart_description)
@@ -486,6 +487,26 @@ depends on the programmer's skill with Pandas and with Unix utilities. Additiona
 large amount of error-handling code, but it is not comprehensive and definitely needs to be
 revisited. There is very little validation code, i.e. code that validates adherence to the schema
 described above.
+
+### Choosing How to Split Datasets <a name="choosing_how_to_split_datasets></a>
+
+There is not a formal system for choosing what defines a single entry. In some cases, it is
+obvious (e.g. a small paper reporting a single expression matrix). In others, it is obvious that
+a publication should be split up (e.g. a large paper reporting multi-species data). It is not
+obvious for some cases in between, or even how to split up large, obvious cases. The main
+restriction that the loom file format imposes is that:
+
+> All cells in a loom file must use the same genes.
+
+This immediately rules out "one entry per publication". Unfortunately, this also invalidates
+subtler cases. For example, there are single publications that report two datasets from the
+same tissue in the same species. However, the mice used were two different reporter lines.
+Thus, one dataset had tdTomato added to the expression matrix and the other did not. This
+is enough to make them non-mergeable.
+
+Because of this tight restriction, entries generally aim for more granular over less granular.
+There are commonly multiple entries per publication, and they often follow the splits in
+GEO (if the data is sourced there).
 
 ## Future Directions <a name="future_directions"></a>
 

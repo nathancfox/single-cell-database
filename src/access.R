@@ -271,12 +271,13 @@ get_sce <- function(uuid,
         colData = col_data,
         metadata = metadata
     )
+    lfile <- get_h5_conn(uuid, warning = FALSE)
     if (!hdf5r::h5attr(lfile[["row_attrs/Accession"]], "all_missing")) {
-        rownames(row_data) <- lfile[["row_attrs/Accession"]][ ]
+        rownames(sce) <- lfile[["row_attrs/Accession"]][ ]
     } else if (!hdf5r::h5attr(lfile[["row_attrs/Gene"]], "all_missing")) {
         genes <- lfile[["row_attrs/Gene"]][ ]
         if (length(genes) == length(unique(genes))) {
-            rownames(row_data) <- genes
+            rownames(sce) <- genes
         } else {
             # Do nothing and let the rownames be integers
         }
