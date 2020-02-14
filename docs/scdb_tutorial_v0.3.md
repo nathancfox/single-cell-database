@@ -113,6 +113,8 @@ The external metadata is stored in a TSV file as a regular table. It has the fol
 values. Additionally, non-mandatory columns can have "-1" as a value if the information is
 missing.
 
+**NOTE:** If you would like to add a nickname to a dataset, please reach out to Nathan Fox!
+
 This external metadata can be gotten as a dataframe with the following method:
 
 #### R
