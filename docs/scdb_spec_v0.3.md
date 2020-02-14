@@ -5,8 +5,8 @@ including the schema of the data, the structure of the stored data, the process 
 the process of storing data, and the future plans.
 
 ```
-Version : WORKING 0.4
-Date    : 
+Version : 0.3
+Date    : 2020-02-14 
 Author  : Nathan Fox
 ```
 

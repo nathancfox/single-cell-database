@@ -1,8 +1,8 @@
 # SCDB Tutorial <a name=scdb_tutorial></a>
 
 ```
-Version : WORKING 0.4
-Date    :
+Version : 0.3
+Date    : 2020-02-14
 Author  : Nathan Fox
 ```
 
