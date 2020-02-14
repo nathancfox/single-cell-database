@@ -1,10 +1,10 @@
 #!/bin/bash
 
 usage() {
-  echo "Usage: ./setup.sh [-v=VERSION] [-l] [-h]"
-  echo "  -v=VERSION     setup VERSION version of scdb. If VERSION is"
-  echo "                 \"current\", the latest stable version will"
-  echo "                 be setup."
+  echo "Usage: source ./setup_py [-v=VERSION] [-l] [-h]"
+  echo "  -v=VERSION     setup VERSION version of python scdb. If"
+  echo "                 VERSION is \"current\", the latest stable"
+  echo "                 version will be setup."
   echo "  -l             list available versions"
   echo "  -h,            print this help."
   echo
@@ -31,14 +31,14 @@ elif (( $# == 1 )); then
         arg="v$arg"
       fi
       if [[ -d "/data/single_cell_database/src/$arg" ]]; then
-	export PYTHONPATH="$prefix/single_cell_database/src/$arg:$PYTHONPATH"
+	export PYTHONPATH="$prefix/single_cell_database/src/$arg/python/:$PYTHONPATH"
       else
         echo "ERROR: $arg is not a valid version!"
       fi
     fi
   elif [[ ${arg:0:2} == "-l" ]]; then
     for version in $(ls $prefix/single_cell_database/src/ | sort); do
-      if [[ $version == "setup.sh" ]]; then
+      if [[ $version == "setup" ]]; then
         continue
       fi
       if [[ $version == "current" ]]; then
