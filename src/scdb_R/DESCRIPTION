@@ -1,0 +1,19 @@
+Package: scdb
+Title: Access to the Single Cell Database (SCDB)
+Version: 0.3
+Authors@R: person("Nathan", "Fox", email = "nfox@cshl.edu",
+		  role = c("aut", "cre"))
+Description: A collection of functions that provide access to
+    the datasets held in the Gillis Lab Single Cell Database
+    (SCDB). Write access is not available.
+License: GPL-2
+LazyData: true
+Imports:
+    hdf5r,
+    httr,
+    loomR,
+    S4Vectors,
+    SingleCellExperiment,
+    SummarizedExperiment
+Encoding: UTF-8
+RoxygenNote: 7.0.2

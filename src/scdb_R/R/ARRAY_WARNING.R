@@ -1,0 +1,12 @@
+ARRAY_WARNING <- paste("\nWARNING: R and Python interpret binary matrices\n",
+                       "in transposed ways. R uses column-major order and\n",
+                       "Python uses row-major order. Because the database\n",
+                       "entries are created in Python, this means that all\n",
+                       "n-D HDF5 datasets (where n > 1) accessed manually\n",
+                       "from an HDF5 or loom connection will be returned\n",
+                       "transposed, i.e. cells x genes. However, cell-specific\n",
+                       "internal universal metadata will still be in the\n",
+                       "\"col_attrs\" HDF5 group and vice versa for genes.\n\n",
+                       "To silence this warning, pass the function arg:\n",
+                       "    \"warning = FALSE\"\n",
+                       sep = "")

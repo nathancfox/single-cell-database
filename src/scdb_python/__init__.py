@@ -15,6 +15,7 @@ modules = [
             'pandas',
             'pprint',
             're',
+            'requests',
             'scanpy',
             'scipy',
             'shutil',
@@ -44,11 +45,14 @@ del mod
 del module
 
 # All checks are passed and the import setup is happening
+from .access import export_bibtex
 from .access import get_anndata
 from .access import get_batch_key
+from .access import get_bibtex
 from .access import get_cell_author_annot
 from .access import get_cell_ids
 from .access import get_cell_univ
+from .access import get_column_allmissing
 from .access import get_column_description
 from .access import get_expr_mat_names
 from .access import get_expr_mat
@@ -58,5 +62,5 @@ from .access import get_gene_ids
 from .access import get_gene_univ
 from .access import get_h5_conn
 from .access import get_loom_conn
-from .access import get_loom_filename
+from .access import get_note
 from .access import uuid_to_row

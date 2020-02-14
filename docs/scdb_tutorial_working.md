@@ -825,7 +825,6 @@ iPython REPL, this is `scdb.get_anndata?`.
 |:------------|:-------|:----------|
 |`get_extern_md()`|Python, R|Get the external metadata as a dataframe.|
 |`uuid_to_row(uuid, columns=None)`|Python, R|Get the row of the external metadata that corresponds to the UUID.|
-|`get_loom_filename(uuid)`|Python, R|Get the full path to the `expr_mat.loom` file that corresponds to the UUID.|
 |`get_h5_conn(uuid)`|Python, R|Get an open HDF5 connection to the requested `expr_mat.loom` file. h5py in Python and hdf5r in R.|
 |`get_loom_conn(uuid)`|Python, R|Get an open loom connection to the requested `expr_mat.loom` file. loompy in Python and loomR in R.|
 |`get_expr_mat(uuid, matrix='matrix')`|Python, R|Get an expression matrix as a sparse matrix from the `expr_mat.loom` file that corresponds to the UUID. Note that this function has a small difference in the Python vs the R implementation.|
