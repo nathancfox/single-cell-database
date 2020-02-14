@@ -155,6 +155,7 @@ stored. If an entry does not match the schema, or contains multiple values that 
 
 | Field | Mandatory | Description | Possible Values |
 |:------|:----------|:------------|:----------------|
+|nickname|No|A short human-memorable nickname for this entry. This is to allow quick access to commonly used datasets without constantly refiltering for the UUIDs.|Anything short and easy to remember. It must be unique among all entries, unless it is "-1". "OTHER" may not be used.|
 |title|No|The title of the publication that reported these data.|All characters must be lowercase alphanumeric, " "(whitespace), "\_"(underscore), or "-"(hyphen)|
 |authors|No|The author(s) of the publication that reported these data.|A ", "(comma whitespace)-delimited list of the authors. No capitalization or punctuation rules inside an author's name. All author names must be in the format "GIVEN\_NAME FAMILY\_NAME". The first author should be first, but all other order is not guaranteed.|
 |abstract|No|The abstract of the publication that reported these data.|Must be a single string with no line breaks or leading/trailing whitespace.|
@@ -189,11 +190,13 @@ The database is stored in a single folder on the Gillis Lab server, `tyrone`, at
 Inside `src/`, there are multiple folders, each corresponding to a version of the code providing
 database access. They are all named `vVERSION_NUMBER` (e.g. `v0.2`). There is also a symbolic
 link named `current` that links to the latest version, and a version named `devel` that may be
-changed without warning. Additionally, there is a file called `setup`. This is a bash script that
-should be "sourced" in order to provide import access to the Python code. It **must** be "sourced"
-and not run, in order to change environment variables (i.e. `source setup` not `./setup`). It allows
-specifying a specific version. Each version contains a Python package called `scdb`. `scdb` also
-contains a R script called `access.R` that provides similar functions, but in R.
+changed without warning. Additionally, there are 2 setup files called `setup_py` and `setup_R`.
+These are bash scripts that should be "sourced" in order to make the access code importable.
+Each script **must** be "sourced" and not run, in order to change environment variables (i.e.
+`source setup_py` not `./setup_py`). The setup scripts allow specifying a specific version.
+
+Each version contains 2 folders: `python` and `R`. Each folder contains a package called `scdb`
+written in that language.
 
 Inside `database/`, there are 2 files and `n` folders, where `n` is
 the number of entries in the database. There should be no other files or folders in this
@@ -208,7 +211,7 @@ The 2 files are:
 
 Each folder contains the expression matrices and internal metadata for a single entry. The folders
 are named the UUID associated with the entry, found in the external metadata. So the output of an
-`ls *` shell command when SCDB contains one entry could look like this:
+`ls *` shell command when the SCDB contains one entry could look like this:
 
 ```
 $ pwd
@@ -368,11 +371,11 @@ in both languages, but a few are language-specific. They are described below.
 |`merge_sce(sce1, sce2, keep_author_annot=FALSE, min_common_genes=15000, cell_id_prefix=4)`|R|Attempt to merge 2 SingleCellExperiment objects returned from `get_sce()`.|
 
 They all have internal documentation. Python code have Google-style docstrings and R functions have
-roxygen style function documentation. They are stored in the codebases under
-`/data/single_cell_database/src/` as `access.py` and `access.R`. To use the access code, follow
-these directions:
+roxygen2 style function documentation. They are stored in the codebases under
+`/data/single_cell_database/src/` as `VERSION/scdb/access.py` and the `VERSION/scdb/R` folder. To
+use the access code, follow these directions:
 
-The code is versioned and stored in separat version folders. All versions are of the format
+The code is versioned and stored in separate version folders. All versions are of the format
 `vVERSION_NUMBER` (e.g. v0.2), except the `devel` version, which is the newest version. It may
 be updated at any time without warning and is not guaranteed to work. The newest stable version
 can be gotten with the `current` version.
@@ -380,24 +383,31 @@ can be gotten with the `current` version.
 ### Access in Python <a name="access_in_python"></a>
 
 The access code in Python is available as an importable Python package called `scdb`. To use it,
-the `setup` script must be sourced. This adds the correct folder to your `PYTHONPATH`
+the `setup_py` script must be sourced. This adds the correct folder to your `PYTHONPATH`
 environment variable, allowing you to import the correct version of the access code. To use the
-`setup` script, just run `source /data/single_cell_database/src/setup -v=current`. This will add
-the latest stable version of the access code to your `PYTHONPATH`. If you want to use a different
-version, just pass a `-v=VERSION` flag. Note that this script **must** be sourced and not run as
-a normal shell script (i.e. `source setup` not `./setup`). A usage string is available via the
-`-h` flag. This sourcing can be added to your `.bashrc`. After the source command is run, the access
-functions are exposed as `import scdb`. e.g. `import scdb; emdf = scdb.get_extern_md()`.
+`setup_py` script, just run `source /data/single_cell_database/src/setup_py -v=current`. This will
+add the latest stable version of the access code to your `PYTHONPATH`. If you want to use a
+different version, just pass a `-v=VERSION` flag. Note that this script **must** be sourced and not
+run as a normal shell script (i.e. `source setup_py` not `./setup_py`). A usage string is available
+via the `-h` flag. This command can be added to your `.bashrc`. After the source command is run,
+the access functions are exposed as `import scdb`. e.g. `import scdb; emdf = scdb.get_extern_md()`.
 
 **WARNING:** This setup script does not remove anything from your `PYTHONPATH`. If you use it
 multiple times in a single session, it will prepend multiple paths to your `PYTHONPATH`.
 
 ### Access in R <a name="access_in_r"></a>
 
-The R code is not a formal package. Instead it is a single R script containing all the access
-functions. To use, simply run `source("/data/single_cell_database/src/VERSION/scdb/access.R")`
-where `VERSION` is the version of the access functions you wish to use. This will import all
-functions into your current R session.
+The access code in R is available as an importable R package called `scdb`. To install it,
+the `setup_R` script must be sourced. This installs the correct version of the code to your
+default R library. To use the `setup_R` script, just run
+`source /data/single_cell_database/src/setup_R -v=current`. This will install the latest stable
+version of the access code to your default R library. If you want to use a different version,
+just pass a `-v=VERSION` flag. Note that this script **must** be sourced and not run as a normal
+shell script (i.e. `source setup_R` not `./setup_R`). A usage string is available via the `-h`
+flag. There is no need to add this command to your `.bashrc` file because it permanently installs
+the package in your R library. If you want to update or change versions, simply rerun the script
+with the desired version. After the source command is run, the access functions are exposed as
+`library(scdb)`. e.g. `library(scdb); emdf <- get_extern_md()`.
 
 ### Dependencies <a name="dependencies"></a>
 

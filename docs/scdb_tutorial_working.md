@@ -21,9 +21,6 @@ scRNA-seq datasets. Before we get started, we should load the access code.
 
 #### R
 
-The R access code is currently not available as a formal package. Instead, you'll have to load
-all the functions into your current environment.
-
 To use these access functions, you need to install the following dependencies:
 
 * hdf5r
@@ -31,12 +28,24 @@ To use these access functions, you need to install the following dependencies:
 * SingleCellExperiment
 * httr
 
+The R access code is installable as a package. To install it to your default R library, run the
+following bash command:
+
 ```
-> source("/data/single_cell_database/src/current/scdb/access.R")
+$ source /data/single_cell_database/src/setup_R -v=current
 ```
 
 **NOTE:** If you are on a non-`rugen` node, you may have to change the path to reflect your
 correct path to the `tyrone` NFS mount on your system.
+
+Now the `scdb` R package is installed to your default library. You shouldn't have to run this again
+in the future unless you want to update your installed package, or change its version.
+
+Now, start an interactive R session and load the package:
+
+```
+> library(scdb)
+```
 
 #### Python
 
@@ -54,7 +63,7 @@ The Python access code is importable as a package. However, you first have to up
 first run this bash command:
 
 ```
-$ source /data/single_cell_database/src/setup -v=current
+$ source /data/single_cell_database/src/setup_py -v=current
 ```
 
 **NOTE:** If you are on a non-`rugen` node, you may have to change the path to reflect your
@@ -63,7 +72,7 @@ correct path to the `tyrone` NFS mount on your system.
 To avoid having to run the setup script in the future, you can add this line to your `.bashrc`
 file.
 
-Then, start a Python REPL and import the package:
+Now, start a Python REPL and import the package:
 
 ```
 >>> import scdb
@@ -80,6 +89,7 @@ The external metadata is stored in a TSV file as a regular table. It has the fol
 
 | Field | Mandatory | Description | Possible Values |
 |:------|:----------|:------------|:----------------|
+|nickname|No|A short human-memorable nickname for this entry. This is to allow quick access to commonly used datasets without constantly refiltering for the UUIDs.|Anything short and easy to remember. It must be unique among all entries, unless it is "-1". "OTHER" may not be used.|
 |title|No|The title of the publication that reported these data.|All characters must be lowercase alphanumeric, " "(whitespace), "\_"(underscore), or "-"(hyphen)|
 |authors|No|The author(s) of the publication that reported these data.|A ", "(comma whitespace)-delimited list of the authors. No capitalization or punctuation rules inside an author's name. All author names must be in the format "GIVEN\_NAME FAMILY\_NAME". The first author should be first, but all other order is not guaranteed.|
 |abstract|No|The abstract of the publication that reported these data.|Must be a single string with no line breaks or leading/trailing whitespace.|
@@ -111,6 +121,7 @@ This external metadata can be gotten as a dataframe with the following method:
 > emdf <- get_extern_md()
 > str(emdf)
 'data.frame':   17 obs. of 18 variables:
+ $ nickname       : chr  "-1" "-1" "-1" "-1" "-1" "-1" ...
  $ title          : chr  "variation in activity state axonal projection..."
  $ authors        : chr  "Maxime Chevée, Johanna De Jong Robertson, ..."
  $ abstract       : chr  "Single-cell RNA sequencing has generated catalogs..."
@@ -139,6 +150,7 @@ potential values of "OTHER" or "-1".
 ```
 >>> emdf = scdb.get_extern_md()
 >>> emdf.iloc[0]
+nickname                                                           -1
 title               variation in activity state axonal projection ...
 authors             Maxime Chevée, Johanna De Jong Robertson, Gabr...
 abstract            Single-cell RNA sequencing has generated catal...
@@ -172,6 +184,7 @@ metadata using its UUID.
 ```
 > str(uuid_to_row(emdf[["uuid"]][1]))
 'data.frame':   1 obs. of 18 variables:
+ $ nickname       : chr  "-1"
  $ title          : chr  "variation in activity state axonal projection..."
  $ authors        : chr  "Maxime Chevée, Johanna De Jong Robertson, ..."
  $ abstract       : chr  "Single-cell RNA sequencing has generated catalogs..."
@@ -195,6 +208,7 @@ metadata using its UUID.
 #### Python
 ```
 >>> scdb.uuid_to_row(emdf.loc[0, 'uuid'])
+nickname                                                           -1
 title               variation in activity state axonal projection ...
 authors             Maxime Chevée, Johanna De Jong Robertson, Gabr...
 abstract            Single-cell RNA sequencing has generated catal...
@@ -813,9 +827,8 @@ AnnData object with n_obs x n_vars = 2669 x 37310
 Detailed documentation does not exist in document form yet. All functions have in-code
 documentation.
 
-In R, these are roxygen function docstrings. However, because these have not been built into a
-formal R package, these must be accessed by reading the source code file that was originally
-imported. Again, this is `/data/single_cell_database/src/current/scdb/access.R`
+In R, these are roxygen2 function docstrings. These can be conveniently accessed via R's help
+utilities. For example, `?get_sce`
 
 In Python, all functions have Google-style docstrings. These can be conveniently accessed
 from the interactive Python REPL. In the Python REPL, this is `help(scdb.get_anndata)` and in the
@@ -847,12 +860,13 @@ iPython REPL, this is `scdb.get_anndata?`.
 
 ## Using a Different Version <a name=using_a_different_version></a>
 
-These access functions are versioned. By using the `current` version in the `source()` (R) and setup
-script (Python), you automatically loaded the last stable version. You can get a list of all
-available versions with the setup script on the command line.
+These access functions are versioned. By using the `current` version in the setup script, you
+automatically loaded the last stable version. You can get a list of all available versions with the
+setup script on the command line. Either setup script can be used for this. Below, I used the Python
+one.
 
 ```
-$ source /data/single_cell_database/src/setup -l
+$ source /data/single_cell_database/src/setup_py -l
 current -> v0.3
 devel
 v0.2
@@ -860,23 +874,25 @@ v0.3
 ```
 
 The `devel` version is the development version. It is unstable and may or may not be working. It can
+change at any time without warning, so use with caution.
 
-If you want to use a different version of the code, simply change the version in the R `source()`
-call or the Python setup script:
+If you want to use a different version of the code, simply change the version in the setup script.
 
 #### R
 
 ```
-> source("/data/single_cell_database/src/VERSION/scdb/access.R")
+$ source /data/single_cell_database/src/setup_R -v=VERSION
 ```
 
 #### Python
 
 ```
-$ source /data/single_cell_database/src/setup -v=VERSION
+$ source /data/single_cell_database/src/setup_py -v=VERSION
 ```
 
 **NOTE:** Versioning may be abandoned in the future. It is not very helpful because older versions
 are sometimes not future-compatible. If the schema of the database changes (e.g. if HDF5 Groups get
-renamed), then the entire database has to be retroactively changed. Because only the access code is versioned and not the actual database, older access code that worked fine in the past will not work for newer versions of the database. Thus, old versions are not guaranteed to be
-working even if they were stable in the past.
+renamed), then the entire database has to be retroactively changed. Because only the access code is
+versioned and not the actual database, older access code that worked fine in the past will not work
+for newer versions of the database. Thus, old versions are not guaranteed to be working even if
+they were stable in the past.

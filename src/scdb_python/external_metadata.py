@@ -505,7 +505,7 @@ def main():
 
 # Every time this module is run or imported, check
 # the integrity of the global constants.
-verify_global_constants()
+# verify_global_constants()
 
 if __name__ == '__main__':
     main()
